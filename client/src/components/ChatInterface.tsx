@@ -259,7 +259,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
               {/* Interactive Elements (Only show for latest assistant message) */}
               {msg.type === "recipient-select" && (
                 <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
-                   {["Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "A Child", "Someone else"].map(opt => (
+                   {["A Child", "Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "Someone else"].map(opt => (
                      <Button 
                         key={opt} 
                         variant="outline" 

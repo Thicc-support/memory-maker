@@ -30,7 +30,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     {
       id: "q1",
       role: "assistant",
-      content: "Who is this special book for?",
+      content: "Who is this book about?",
       type: "recipient-select"
     }
   ]);

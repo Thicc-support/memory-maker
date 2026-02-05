@@ -36,6 +36,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [waitingForInput, setWaitingForInput] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Draft State
@@ -72,6 +73,15 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
 
   // Interaction Handlers
   const handleSelection = (key: string, value: string, nextStep: () => void) => {
+    if (value === "Someone else") {
+      addMessage({ id: Date.now().toString(), role: "user", content: "Someone else" });
+      simulateTyping(() => {
+         addMessage({ id: Date.now().toString(), role: "assistant", content: "No problem! Who is it for? (e.g. 'My Teacher', 'Best Friend')", type: "text" });
+         setWaitingForInput("custom_recipient");
+      });
+      return;
+    }
+
     setDraft(prev => ({ ...prev, [key]: value }));
     addMessage({ id: Date.now().toString(), role: "user", content: value });
     simulateTyping(nextStep);
@@ -110,6 +120,13 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     
     addMessage({ id: Date.now().toString(), role: "user", content: input });
     setInput("");
+
+    if (waitingForInput === "custom_recipient") {
+      setDraft(prev => ({ ...prev, recipient: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askTheme);
+      return;
+    }
     
     // Simple logic for the interview phase
     simulateTyping(() => {
@@ -163,7 +180,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
               {/* Interactive Elements (Only show for latest assistant message) */}
               {msg.type === "recipient-select" && (
                 <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
-                   {["Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "My Child"].map(opt => (
+                   {["Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "My Child", "Someone else"].map(opt => (
                      <Button 
                         key={opt} 
                         variant="outline" 

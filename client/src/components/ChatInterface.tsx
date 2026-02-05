@@ -84,6 +84,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
 
     setDraft(prev => ({ ...prev, [key]: value }));
     addMessage({ id: Date.now().toString(), role: "user", content: value });
+    if (waitingForInput) setWaitingForInput(null);
     simulateTyping(nextStep);
   };
 
@@ -186,7 +187,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                         variant="outline" 
                         onClick={() => handleSelection("recipient", opt, steps.askTheme)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
-                        disabled={messages.indexOf(msg) !== messages.length - 1} // Disable if not latest
+                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-select" && waitingForInput === "custom_recipient")} // Allow if waiting for custom recipient
                      >
                        {opt}
                      </Button>

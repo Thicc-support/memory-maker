@@ -10,7 +10,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  type?: "text" | "recipient-select" | "recipient-detail-select" | "theme-select" | "format-select" | "length-select" | "age-select" | "photo-upload" | "balance-select";
+  type?: "text" | "recipient-select" | "recipient-detail-select" | "subject-select" | "theme-select" | "format-select" | "length-select" | "age-select" | "photo-upload" | "balance-select";
   options?: any;
 }
 
@@ -43,6 +43,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   const [draft, setDraft] = useState({
     recipient: "",
     recipientRelationship: "",
+    subject: "",
     theme: "",
     bookType: "",
     bookLength: "",
@@ -81,7 +82,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       addMessage({ id: Date.now().toString(), role: "user", content: "Someone else" });
       simulateTyping(() => {
          addMessage({ id: Date.now().toString(), role: "assistant", content: "No problem! Who is it for? (e.g. 'My Teacher', 'Best Friend')", type: "text" });
-         setWaitingForInput("custom_recipient");
+         setWaitingForInput(key === 'subject' ? "custom_subject" : "custom_recipient");
       });
       return;
     }
@@ -95,7 +96,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       return;
     }
 
-    // Special logic for "A Child" -> asks for specific relationship
+    // Special logic for "A Child" in recipient -> asks for specific relationship
     if (key === "recipient" && value === "A Child") {
       setDraft(prev => ({ ...prev, [key]: value }));
       addMessage({ id: Date.now().toString(), role: "user", content: value });
@@ -114,6 +115,11 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     askRecipientDetail: () => {
       addMessage({
         id: "q-recipient-detail", role: "assistant", content: "How special! Who is the recipient?", type: "recipient-detail-select"
+      });
+    },
+    askSubject: () => {
+      addMessage({
+        id: "q-subject", role: "assistant", content: "And who is this book about? (The main character)", type: "subject-select"
       });
     },
     askTheme: () => {
@@ -168,12 +174,19 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     if (waitingForInput === "custom_recipient") {
       setDraft(prev => ({ ...prev, recipient: input }));
       setWaitingForInput(null);
-      simulateTyping(steps.askTheme);
+      simulateTyping(steps.askSubject);
       return;
     }
 
     if (waitingForInput === "custom_recipient_detail") {
       setDraft(prev => ({ ...prev, recipientRelationship: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askSubject);
+      return;
+    }
+
+    if (waitingForInput === "custom_subject") {
+      setDraft(prev => ({ ...prev, subject: input }));
       setWaitingForInput(null);
       simulateTyping(steps.askTheme);
       return;
@@ -263,7 +276,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipient", opt, steps.askTheme)}
+                        onClick={() => handleSelection("recipient", opt, steps.askSubject)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
                         disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-select" && waitingForInput === "custom_recipient")} // Allow if waiting for custom recipient
                      >
@@ -279,7 +292,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipientRelationship", opt, steps.askTheme)}
+                        onClick={() => handleSelection("recipientRelationship", opt, steps.askSubject)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
                         disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
                      >
@@ -301,6 +314,22 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <HelpCircle size={16} className="text-muted-foreground" />
                      Someone else
                    </Button>
+                </div>
+              )}
+
+              {msg.type === "subject-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
+                   {["A Child", "Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "Someone else"].map(opt => (
+                     <Button 
+                        key={opt} 
+                        variant="outline" 
+                        onClick={() => handleSelection("subject", opt, steps.askTheme)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "subject-select" && waitingForInput === "custom_subject")}
+                     >
+                       {opt}
+                     </Button>
+                   ))}
                 </div>
               )}
 

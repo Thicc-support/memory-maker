@@ -2,31 +2,49 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar } from "@/components/ui/avatar";
-import { Sparkles, Send, User, Bot } from "lucide-react";
+import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon } from "lucide-react";
+import { PhotoUpload } from "@/components/PhotoUpload";
+import { Slider } from "@/components/ui/slider";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  type?: "text" | "recipient-select" | "theme-select" | "format-select" | "photo-upload" | "balance-select";
+  options?: any;
 }
 
 interface ChatInterfaceProps {
   onComplete: () => void;
-  topic: string;
+  onUpdateDraft: (data: any) => void;
 }
 
-export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
+export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: `Hi there! I'm TaleWeaver. I'm so excited to help you write a story about ${topic}! First, who is this book for? (Child's name)`
+      content: "Hi! I'm TaleWeaver. I'm going to help you create a magical custom book. Let's start with the most important question:",
+      type: "text"
+    },
+    {
+      id: "q1",
+      role: "assistant",
+      content: "Who is this special book for?",
+      type: "recipient-select"
     }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Draft State
+  const [draft, setDraft] = useState({
+    recipient: "",
+    theme: "",
+    bookType: "",
+    photos: [] as string[]
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,48 +52,77 @@ export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  // Simulated conversation flow
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    onUpdateDraft(draft);
+  }, [draft, onUpdateDraft]);
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input
-    };
+  const addMessage = (msg: Message) => {
+    setMessages(prev => [...prev, msg]);
+  };
 
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
+  const simulateTyping = (callback: () => void) => {
     setIsTyping(true);
-
-    // Simulate AI thinking and responding based on message count
     setTimeout(() => {
-      let nextQuestion = "";
-      const count = messages.length;
-
-      if (count === 1) nextQuestion = `Nice to meet you! How old is the child? knowing their age helps me pick the right words.`;
-      else if (count === 3) nextQuestion = `Got it! Now, let's talk about the adventure. What is one specific memory you have about ${topic} that you want to share?`;
-      else if (count === 5) nextQuestion = `That's amazing! Do you want this story to be funny, sentimental, or adventurous?`;
-      else if (count === 7) {
-        nextQuestion = "Perfect! I have everything I need to weave your tale. Give me a moment to write and illustrate your book...";
-        setTimeout(onComplete, 3000); // Trigger completion after this message
-      }
-
-      if (nextQuestion) {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: nextQuestion
-        }]);
-      }
       setIsTyping(false);
-    }, 1500);
+      callback();
+    }, 1200);
+  };
+
+  // Interaction Handlers
+  const handleSelection = (key: string, value: string, nextStep: () => void) => {
+    setDraft(prev => ({ ...prev, [key]: value }));
+    addMessage({ id: Date.now().toString(), role: "user", content: value });
+    simulateTyping(nextStep);
+  };
+
+  const steps = {
+    askTheme: () => {
+      addMessage({
+        id: "q-theme", role: "assistant", content: "Wonderful choice! Now, what kind of adventure should we go on?", type: "theme-select"
+      });
+    },
+    askFormat: () => {
+      addMessage({
+        id: "q-format", role: "assistant", content: "Ooh, I love that theme! How should we tell this story?", type: "format-select"
+      });
+    },
+    askPhotos: () => {
+      addMessage({
+        id: "q-photos", role: "assistant", content: "Perfect. To make the illustrations look just right, could you upload a photo of the main character?", type: "photo-upload"
+      });
+    },
+    startInterview: () => {
+      addMessage({
+        id: "q-interview-start", role: "assistant", content: "Thanks! Now the fun part begins. I'm going to ask you a few questions to write the story.", type: "text"
+      });
+      setTimeout(() => {
+        addMessage({
+           id: "q-interview-1", role: "assistant", content: "What is the child's name and age?", type: "text"
+        });
+      }, 1500);
+    }
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    
+    addMessage({ id: Date.now().toString(), role: "user", content: input });
+    setInput("");
+    
+    // Simple logic for the interview phase
+    simulateTyping(() => {
+      const count = messages.filter(m => m.role === "user").length;
+      if (count > 2) {
+         addMessage({ id: Date.now().toString(), role: "assistant", content: "That's great! Tell me one specific funny memory involving them." });
+         if (count > 3) setTimeout(onComplete, 4000);
+      }
+    });
   };
 
   return (
-    <div className="flex flex-col h-[600px] max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-border">
+    <div className="flex flex-col h-[700px] max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-border">
       {/* Header */}
       <div className="bg-primary/10 p-4 border-b border-border flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
@@ -83,7 +130,7 @@ export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
         </div>
         <div>
           <h3 className="font-bold text-primary-foreground">TaleWeaver AI</h3>
-          <p className="text-xs text-muted-foreground">Weaving your story...</p>
+          <p className="text-xs text-muted-foreground">Designing your book...</p>
         </div>
       </div>
 
@@ -95,9 +142,9 @@ export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <div className={`flex gap-3 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   msg.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-primary text-white'
                 }`}>
@@ -112,6 +159,83 @@ export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
                   {msg.content}
                 </div>
               </div>
+
+              {/* Interactive Elements (Only show for latest assistant message) */}
+              {msg.type === "recipient-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
+                   {["Mom", "Dad", "Grandparent", "Aunt/Uncle", "Family Heritage", "My Child"].map(opt => (
+                     <Button 
+                        key={opt} 
+                        variant="outline" 
+                        onClick={() => handleSelection("recipient", opt, steps.askTheme)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                        disabled={messages.indexOf(msg) !== messages.length - 1} // Disable if not latest
+                     >
+                       {opt}
+                     </Button>
+                   ))}
+                </div>
+              )}
+
+              {msg.type === "theme-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
+                   {[
+                      { id: "adventure", icon: Globe, label: "Adventure" },
+                      { id: "career", icon: Briefcase, label: "My Career" },
+                      { id: "hobby", icon: Heart, label: "My Hobbies" },
+                      { id: "fantasy", icon: Star, label: "Fantasy" },
+                    ].map(opt => (
+                     <Button 
+                        key={opt.id} 
+                        variant="outline" 
+                        onClick={() => handleSelection("theme", opt.label, steps.askFormat)}
+                        className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
+                        disabled={messages.indexOf(msg) !== messages.length - 1}
+                     >
+                       <opt.icon size={16} className="text-primary" />
+                       {opt.label}
+                     </Button>
+                   ))}
+                </div>
+              )}
+
+              {msg.type === "format-select" && (
+                <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
+                   <div 
+                      onClick={() => handleSelection("bookType", "Story Book", steps.askPhotos)}
+                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
+                   >
+                     <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Book size={20} /></div>
+                     <div>
+                       <div className="font-bold text-sm">Story Book</div>
+                       <div className="text-xs text-muted-foreground">Classic narrative structure</div>
+                     </div>
+                   </div>
+                   <div 
+                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askPhotos)}
+                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
+                   >
+                     <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Feather size={20} /></div>
+                     <div>
+                       <div className="font-bold text-sm">Poem Collection</div>
+                       <div className="text-xs text-muted-foreground">Rhyming verses</div>
+                     </div>
+                   </div>
+                </div>
+              )}
+
+              {msg.type === "photo-upload" && messages.indexOf(msg) === messages.length - 1 && (
+                <div className="ml-11 mt-3 w-full max-w-md bg-white p-4 rounded-xl border border-border">
+                  <PhotoUpload label="Upload Photo" description="Clear face photo works best" />
+                  <Button size="sm" onClick={() => {
+                    addMessage({ id: Date.now().toString(), role: "user", content: "Photos uploaded!" });
+                    simulateTyping(steps.startInterview);
+                  }} className="mt-4 w-full rounded-full">
+                    Done Uploading
+                  </Button>
+                </div>
+              )}
+
             </motion.div>
           ))}
         </AnimatePresence>
@@ -143,6 +267,7 @@ export function ChatInterface({ onComplete, topic }: ChatInterfaceProps) {
             placeholder="Type your answer here..."
             className="flex-1 rounded-full border-slate-200 focus:ring-primary bg-slate-50"
             autoFocus
+            disabled={isTyping} 
           />
           <Button 
             type="submit" 

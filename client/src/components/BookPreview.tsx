@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ShoppingCart, Truck } from "lucide-react";
 import illustrationSpace from "@/assets/images/book-cover-space.png";
+import { FormatSelector, FormatType } from "@/components/FormatSelector";
 
 export function BookPreview() {
   const [page, setPage] = useState(0);
+  const [format, setFormat] = useState<FormatType>("hardcover");
 
   const pages = [
     {
@@ -81,22 +83,19 @@ export function BookPreview() {
         </div>
       </div>
 
-      {/* Order Section */}
-      <div className="mt-12 bg-white p-8 rounded-2xl shadow-lg border border-border flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <h3 className="font-bold text-xl mb-1">Ready to print?</h3>
-          <p className="text-muted-foreground text-sm flex items-center gap-2">
-            <Truck size={16} /> Estimated delivery: 5-7 business days
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right mr-4">
-            <div className="text-sm text-muted-foreground line-through">$39.99</div>
-            <div className="text-2xl font-bold text-primary">$29.99</div>
+      {/* Format Selection */}
+      <div className="mt-12 bg-white p-8 rounded-2xl shadow-lg border border-border">
+        <h3 className="font-bold text-xl mb-6">Choose your edition</h3>
+        <FormatSelector selected={format} onChange={setFormat} />
+        
+        <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-border">
+          <div className="text-muted-foreground text-sm flex items-center gap-2">
+            <Truck size={16} /> Estimated delivery: {format === "digital" ? "Instant" : "5-7 business days"}
           </div>
-          <Button size="lg" className="rounded-full px-8 font-bold shadow-lg shadow-primary/20">
+          
+          <Button size="lg" className="rounded-full px-8 font-bold shadow-lg shadow-primary/20 w-full md:w-auto">
             <ShoppingCart size={18} className="mr-2" />
-            Order Hardcover
+            Order {format === "digital" ? "Digital Copy" : format === "softcover" ? "Softcover" : "Hardcover"}
           </Button>
         </div>
       </div>

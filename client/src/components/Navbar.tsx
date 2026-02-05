@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { BookOpen } from "lucide-react";
+import { BookOpen, User } from "lucide-react";
 
 export function Navbar() {
   return (
@@ -17,12 +17,17 @@ export function Navbar() {
       </Link>
 
       <div className="hidden md:flex gap-8 items-center font-medium text-muted-foreground">
-        <a href="#how-it-works" className="hover:text-primary transition-colors">How it Works</a>
-        <a href="#examples" className="hover:text-primary transition-colors">Examples</a>
-        <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
+        <a href="/#how-it-works" className="hover:text-primary transition-colors">How it Works</a>
+        <a href="/#examples" className="hover:text-primary transition-colors">Examples</a>
+        <a href="/#pricing" className="hover:text-primary transition-colors">Pricing</a>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 items-center">
+        <Link href="/profile">
+           <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/50 text-muted-foreground hover:text-primary">
+             <User size={20} />
+           </Button>
+        </Link>
         <Link href="/create">
           <Button className="rounded-full px-6 font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5">
             Create a Book

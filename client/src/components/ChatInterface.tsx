@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon } from "lucide-react";
+import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Slider } from "@/components/ui/slider";
 
@@ -82,6 +82,15 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       return;
     }
 
+    if (value === "Something else") {
+      addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
+      simulateTyping(() => {
+         addMessage({ id: Date.now().toString(), role: "assistant", content: key === 'theme' ? "How exciting! What theme do you have in mind?" : "I see! Describe the format you'd like.", type: "text" });
+         setWaitingForInput(key === 'theme' ? "custom_theme" : "custom_format");
+      });
+      return;
+    }
+
     setDraft(prev => ({ ...prev, [key]: value }));
     addMessage({ id: Date.now().toString(), role: "user", content: value });
     if (waitingForInput) setWaitingForInput(null);
@@ -126,6 +135,20 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       setDraft(prev => ({ ...prev, recipient: input }));
       setWaitingForInput(null);
       simulateTyping(steps.askTheme);
+      return;
+    }
+
+    if (waitingForInput === "custom_theme") {
+      setDraft(prev => ({ ...prev, theme: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askFormat);
+      return;
+    }
+
+    if (waitingForInput === "custom_format") {
+      setDraft(prev => ({ ...prev, bookType: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askPhotos);
       return;
     }
     
@@ -208,12 +231,21 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                         variant="outline" 
                         onClick={() => handleSelection("theme", opt.label, steps.askFormat)}
                         className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
-                        disabled={messages.indexOf(msg) !== messages.length - 1}
+                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "theme-select" && waitingForInput === "custom_theme")}
                      >
                        <opt.icon size={16} className="text-primary" />
                        {opt.label}
                      </Button>
                    ))}
+                   <Button 
+                      variant="outline" 
+                      onClick={() => handleSelection("theme", "Something else", steps.askFormat)}
+                      className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all col-span-2"
+                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "theme-select" && waitingForInput === "custom_theme")}
+                   >
+                     <HelpCircle size={16} className="text-muted-foreground" />
+                     Something else
+                   </Button>
                 </div>
               )}
 
@@ -221,7 +253,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                 <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
                    <div 
                       onClick={() => handleSelection("bookType", "Story Book", steps.askPhotos)}
-                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
+                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
                    >
                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Book size={20} /></div>
                      <div>
@@ -231,12 +263,22 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    </div>
                    <div 
                       onClick={() => handleSelection("bookType", "Poem Collection", steps.askPhotos)}
-                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
+                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
                    >
                      <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Feather size={20} /></div>
                      <div>
                        <div className="font-bold text-sm">Poem Collection</div>
                        <div className="text-xs text-muted-foreground">Rhyming verses</div>
+                     </div>
+                   </div>
+                   <div 
+                      onClick={() => handleSelection("bookType", "Something else", steps.askPhotos)}
+                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
+                   >
+                     <div className="bg-slate-100 text-slate-600 p-2 rounded-lg"><HelpCircle size={20} /></div>
+                     <div>
+                       <div className="font-bold text-sm">Something else</div>
+                       <div className="text-xs text-muted-foreground">Custom format</div>
                      </div>
                    </div>
                 </div>

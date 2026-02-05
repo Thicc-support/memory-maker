@@ -69,17 +69,20 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="rounded-full px-4 border border-border hover:bg-white/50">
                   <User size={18} className="mr-2" />
-                  <span className="max-w-[100px] truncate">{user.name}</span>
+                  <span className="max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                  Profile & Books
+                  Account
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                  Drafts
+                  Draft
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                  Past Orders
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
@@ -90,7 +93,7 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <Button variant="ghost" onClick={() => setShowAuth(true)} className="rounded-full hover:bg-white/50 text-muted-foreground hover:text-primary">
-              Log In
+              Create Account
             </Button>
           )}
 

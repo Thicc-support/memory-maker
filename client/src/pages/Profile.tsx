@@ -3,7 +3,7 @@ import { BookCard } from "@/components/BookCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, BookOpen, Heart, Clock, Play, Trash2 } from "lucide-react";
+import { Settings, BookOpen, Heart, Clock, Play, Trash2, Briefcase } from "lucide-react";
 import coverSpace from "@/assets/images/book-cover-space.png";
 import coverJungle from "@/assets/images/book-cover-jungle.png";
 import { Link } from "wouter";

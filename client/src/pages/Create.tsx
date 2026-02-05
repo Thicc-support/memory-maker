@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { BookPreview } from "@/components/BookPreview";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { AuthModal } from "@/components/AuthModal";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { 
   ArrowRight, Book, Feather, Image as ImageIcon, 
-  AlignLeft, Plus, Briefcase, Heart, Globe, Star 
+  AlignLeft, Plus, Briefcase, Heart, Globe, Star, Save, CheckCircle
 } from "lucide-react";
 import {
   Select,
@@ -27,6 +27,8 @@ export default function Create() {
   const [step, setStep] = useState<"setup" | "chat" | "generating" | "preview">("setup");
   const [showAuth, setShowAuth] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Book Configuration State
   const [bookType, setBookType] = useState("story");
@@ -48,6 +50,36 @@ export default function Create() {
       return () => clearTimeout(timer);
     }
   }, [step]);
+
+  // Simulated Auto-Save Logic
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const saveData = async () => {
+      setIsSaving(true);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const draftData = {
+        bookType,
+        textBalance,
+        theme,
+        customInfo,
+        customQuestions,
+        updatedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem("currentDraft", JSON.stringify(draftData));
+      
+      setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setIsSaving(false);
+    };
+
+    // Debounce save on changes
+    const timer = setTimeout(saveData, 2000);
+    return () => clearTimeout(timer);
+
+  }, [bookType, textBalance, theme, customInfo, customQuestions, isAuthenticated]);
 
   const handleStart = () => {
     if (!isAuthenticated) {
@@ -75,6 +107,30 @@ export default function Create() {
           setStep("chat");
         }} 
       />
+      
+      {/* Auto-Save Indicator */}
+      <AnimatePresence>
+        {isAuthenticated && (step === "setup" || step === "chat") && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="fixed top-24 right-6 z-20 bg-white/80 backdrop-blur border border-border px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2 text-xs font-medium text-muted-foreground"
+          >
+            {isSaving ? (
+              <>
+                <Save size={12} className="animate-pulse" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={12} className="text-green-500" />
+                Saved at {lastSaved}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <div className="container mx-auto px-6 py-12">
         

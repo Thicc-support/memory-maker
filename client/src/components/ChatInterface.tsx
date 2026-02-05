@@ -30,7 +30,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     {
       id: "q1",
       role: "assistant",
-      content: "Who is this book about?",
+      content: "Who will this book be given to?",
       type: "recipient-select"
     }
   ]);
@@ -139,7 +139,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     },
     askAge: () => {
       addMessage({
-        id: "q-age", role: "assistant", content: "And how old are they? This helps us tailor the reading difficulty.", type: "age-select"
+        id: "q-age", role: "assistant", content: "And how old is the recipient? This helps us tailor the reading difficulty to match their age.", type: "age-select"
       });
     },
     askPhotos: () => {

@@ -3,9 +3,10 @@ import { BookCard } from "@/components/BookCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, BookOpen, Heart, Clock } from "lucide-react";
+import { Settings, BookOpen, Heart, Clock, Play, Trash2 } from "lucide-react";
 import coverSpace from "@/assets/images/book-cover-space.png";
 import coverJungle from "@/assets/images/book-cover-jungle.png";
+import { Link } from "wouter";
 
 export default function Profile() {
   return (
@@ -20,7 +21,7 @@ export default function Profile() {
               <AvatarImage src="https://github.com/shadcn.png" />
               <AvatarFallback>JD</AvatarFallback>
             </Avatar>
-            <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white border-2 border-white">
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white border-2 border-white cursor-pointer hover:bg-primary/90">
               <Settings size={14} />
             </div>
           </div>
@@ -34,13 +35,15 @@ export default function Profile() {
             </div>
           </div>
 
-          <Button className="rounded-full shadow-lg shadow-primary/20">
-            Create New Story
-          </Button>
+          <Link href="/create">
+            <Button className="rounded-full shadow-lg shadow-primary/20">
+              Create New Story
+            </Button>
+          </Link>
         </div>
 
         {/* Content Tabs */}
-        <Tabs defaultValue="books" className="w-full">
+        <Tabs defaultValue="drafts" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3 mb-8 bg-white border border-border p-1 rounded-full mx-auto md:mx-0">
             <TabsTrigger value="books" className="rounded-full">My Books</TabsTrigger>
             <TabsTrigger value="drafts" className="rounded-full">Drafts</TabsTrigger>
@@ -67,11 +70,55 @@ export default function Profile() {
           </TabsContent>
           
           <TabsContent value="drafts">
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-border">
-              <Clock size={48} className="text-muted-foreground mb-4 opacity-50" />
-              <h3 className="font-heading text-xl font-bold mb-2">No drafts in progress</h3>
-              <p className="text-muted-foreground">Start a new story whenever inspiration strikes!</p>
-            </div>
+             <div className="grid md:grid-cols-2 gap-6">
+                {/* Draft 1 */}
+                <div className="bg-white p-6 rounded-2xl border border-border shadow-sm flex gap-4 items-center">
+                  <div className="w-20 h-20 rounded-lg bg-orange-100 flex items-center justify-center text-orange-500 shrink-0">
+                    <Briefcase size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-heading text-lg font-bold">Daddy's Engineering Job</h3>
+                      <span className="text-xs text-muted-foreground bg-slate-100 px-2 py-1 rounded-full">50% Complete</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">Interview Phase • Career Theme</p>
+                    <div className="flex gap-2">
+                       <Link href="/create">
+                        <Button size="sm" className="rounded-full h-8 text-xs">
+                          <Play size={12} className="mr-1" /> Continue
+                        </Button>
+                       </Link>
+                       <Button size="sm" variant="ghost" className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                          <Trash2 size={14} />
+                       </Button>
+                    </div>
+                  </div>
+                </div>
+
+                 {/* Draft 2 */}
+                <div className="bg-white p-6 rounded-2xl border border-border shadow-sm flex gap-4 items-center">
+                  <div className="w-20 h-20 rounded-lg bg-purple-100 flex items-center justify-center text-purple-500 shrink-0">
+                    <Heart size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-heading text-lg font-bold">Auntie's Garden Poems</h3>
+                      <span className="text-xs text-muted-foreground bg-slate-100 px-2 py-1 rounded-full">20% Complete</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">Setup Phase • Hobby Theme</p>
+                     <div className="flex gap-2">
+                       <Link href="/create">
+                        <Button size="sm" className="rounded-full h-8 text-xs">
+                          <Play size={12} className="mr-1" /> Continue
+                        </Button>
+                       </Link>
+                       <Button size="sm" variant="ghost" className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                          <Trash2 size={14} />
+                       </Button>
+                    </div>
+                  </div>
+                </div>
+             </div>
           </TabsContent>
           
           <TabsContent value="favorites">

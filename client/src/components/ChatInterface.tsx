@@ -289,7 +289,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    <Button 
                       variant="outline" 
                       onClick={() => {
-                        addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
+                        addMessage({ id: Date.now().toString(), role: "user", content: "Someone else" });
                         simulateTyping(() => {
                            addMessage({ id: Date.now().toString(), role: "assistant", content: "Who is the recipient?", type: "text" });
                            setWaitingForInput("custom_recipient_detail");
@@ -299,7 +299,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                       disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
                    >
                      <HelpCircle size={16} className="text-muted-foreground" />
-                     Something else
+                     Someone else
                    </Button>
                 </div>
               )}

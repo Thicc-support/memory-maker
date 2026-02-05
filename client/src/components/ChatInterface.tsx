@@ -19,6 +19,18 @@ interface ChatInterfaceProps {
   onUpdateDraft: (data: any) => void;
 }
 
+const themeQuestions: Record<string, string[]> = {
+  "Adventure": ["What is the biggest challenge they have overcome?", "Who is their favorite sidekick?"],
+  "Travel": ["What is the most memorable place they have visited?", "What's a funny thing that happened on a trip?"],
+  "Exploration": ["What kind of things do they like to discover or investigate?", "If they could explore anywhere, where would it be?"],
+  "My Career": ["What is their dream job or current profession?", "What do they love most about their work?"],
+  "My Hobbies": ["What is their absolute favorite hobby or pastime?", "How did they get started with this hobby?"],
+  "Challenges": ["Tell me about a time they didn't give up.", "What motivates them to keep going?"],
+  "Missions": ["If they were a secret agent, what would their mission be?", "What is their special skill?"],
+  "Quests": ["What is the 'treasure' they are always searching for?", "Who helps them on their quest?"],
+  "Fantasy": ["If they had a magic power, what would it be?", "What kind of magical creature would be their friend?"],
+};
+
 export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -169,9 +181,26 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       addMessage({
         id: "q-interview-start", role: "assistant", content: "Thanks! Now the fun part begins. I'm going to ask you a few questions to write the story.", type: "text"
       });
+      
+      const theme = draft.theme; // Captured from closure, might be slightly risky but likely ok due to rerender. Better to access via ref if needed, but draft state updates should trigger re-render.
+      // Wait, draft state updates trigger re-render of ChatInterface. But startInterview is defined inside the component function scope.
+      // When handleSelection calls simulateTyping(steps.askFormat), 'steps' is from the scope where handleSelection was defined (current render).
+      // So 'draft' inside 'steps' refers to the draft state of the CURRENT render.
+      // But draft is updated via setDraft which is async.
+      // The 'nextStep' passed to handleSelection is executed after a timeout.
+      // By the time the timeout fires, a re-render has likely happened, but the closure 'steps' is still the old one from the previous render.
+      // This is a classic React closure trap.
+      // However, for most simple flows it's fine. But for `startInterview` which depends on `draft.theme` set several steps ago, it should be fine because `draft.theme` was set way before `startInterview` is called.
+      // Actually `startInterview` is called from the PhotoUpload button onClick.
+      // That onClick is created during the render where "Done Uploading" is shown.
+      // At that point, `draft.theme` is definitely set. So `draft.theme` here is correct.
+
+      const questions = themeQuestions[theme] || ["Tell me one specific funny memory involving them."];
+      const question = questions[0];
+
       setTimeout(() => {
         addMessage({
-           id: "q-interview-1", role: "assistant", content: "Tell me one specific funny memory involving them.", type: "text"
+           id: "q-interview-1", role: "assistant", content: question, type: "text"
         });
       }, 1500);
     }
@@ -236,8 +265,45 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     simulateTyping(() => {
       const count = messages.filter(m => m.role === "user").length;
       if (count > 2) { // Just continue interview
+         // Check if we have a second question for the theme
+         const theme = draft.theme; // This draft might be stale if inside closure of handleSend created earlier?
+         // handleSend is recreated on every render.
+         // But wait, if we are in the interview loop, `draft` hasn't changed recently. So it's fine.
+         
+         const questions = themeQuestions[theme] || ["Tell me one specific funny memory involving them."];
+         
+         // Basic logic to ask the second question if we haven't asked it yet?
+         // We don't track which question was asked.
+         // Let's just ask the second question if it exists and we are at a certain stage.
+         // Current count > 2 means we are in interview.
+         // Let's assume:
+         // 1. Photo upload done -> startInterview -> Ask Question 1
+         // 2. User answers Q1 -> handleSend -> Ask Question 2 (if exists) or "Special message"
+         
+         // We need to know how many interview questions we've asked.
+         // A simple hack: check the last assistant message content? Or just use a simple counter based on total messages?
+         // Let's use message count.
+         // Messages length will be roughly:
+         // Welcome (1) + Recipient Q (1) + Ans (1) + [Detail Q+A] + Subject Q(1) + Ans(1) + Theme Q(1) + Ans(1) + Format Q(1) + Ans(1) + Length Q(1) + Ans(1) + Name Q(1) + Ans(1) + Age Q(1) + Ans(1) + Photo Q(1) + Ans("Photos uploaded!")(1) + Start Interview Intro(1) + Interview Q1(1) = ~20 messages
+         
+         // This is getting complicated to count. Let's just look at the last assistant question.
+         const lastAssistantMsg = messages.filter(m => m.role === "assistant").pop();
+         
+         if (lastAssistantMsg && questions.includes(lastAssistantMsg.content)) {
+            // We just asked a theme question.
+            const index = questions.indexOf(lastAssistantMsg.content);
+            if (index < questions.length - 1) {
+               addMessage({ id: Date.now().toString(), role: "assistant", content: questions[index + 1] });
+               return;
+            }
+         }
+         
          addMessage({ id: Date.now().toString(), role: "assistant", content: "That's wonderful! Is there a special message or dedication you'd like to include?" });
-         if (count > 4) setTimeout(onComplete, 4000);
+         
+         // Only complete after dedication
+         if (lastAssistantMsg?.content.includes("special message")) {
+             setTimeout(onComplete, 4000);
+         }
       }
     });
   };

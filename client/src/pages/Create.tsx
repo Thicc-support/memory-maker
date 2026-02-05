@@ -31,6 +31,7 @@ export default function Create() {
   const [isSaving, setIsSaving] = useState(false);
   
   // Book Configuration State
+  const [recipient, setRecipient] = useState("");
   const [bookType, setBookType] = useState("story");
   const [textBalance, setTextBalance] = useState([50]);
   const [theme, setTheme] = useState("adventure");
@@ -42,6 +43,7 @@ export default function Create() {
 
   // Refs for Auto-Save
   const draftDataRef = useRef({
+    recipient,
     bookType,
     textBalance,
     theme,
@@ -52,13 +54,14 @@ export default function Create() {
   // Update ref whenever state changes
   useEffect(() => {
     draftDataRef.current = {
+      recipient,
       bookType,
       textBalance,
       theme,
       customInfo,
       customQuestions
     };
-  }, [bookType, textBalance, theme, customInfo, customQuestions]);
+  }, [recipient, bookType, textBalance, theme, customInfo, customQuestions]);
 
   useEffect(() => {
     // Check auth status mock
@@ -162,10 +165,29 @@ export default function Create() {
             <div className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
               <div className="p-8 space-y-12">
                 
-                {/* 1. Theme Selection */}
+                {/* 1. Recipient Selection (New) */}
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-bold flex items-center gap-2">
                     <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">1</span>
+                    Who is this book for?
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {["Mom", "Dad", "Grandmother", "Grandfather", "Aunt", "Uncle", "Family Heritage"].map((r) => (
+                      <div 
+                        key={r}
+                        onClick={() => setRecipient(r)}
+                        className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all ${recipient === r ? "border-primary bg-primary/5 text-primary font-bold" : "border-border hover:border-primary/30"}`}
+                      >
+                        {r}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Theme Selection */}
+                <div className="space-y-4">
+                  <h3 className="font-heading text-xl font-bold flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
                     Choose a Theme
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -196,11 +218,11 @@ export default function Create() {
                   )}
                 </div>
 
-                {/* 2. Format & Balance */}
+                {/* 3. Format & Balance */}
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <h3 className="font-heading text-xl font-bold flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
+                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">3</span>
                       Book Format
                     </h3>
                     <div className="flex flex-col gap-3">
@@ -229,7 +251,7 @@ export default function Create() {
 
                   <div className="space-y-4">
                     <h3 className="font-heading text-xl font-bold flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">3</span>
+                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">4</span>
                       Visual Balance
                     </h3>
                     <div className="bg-slate-50 p-6 rounded-xl border border-border h-full flex flex-col justify-center">
@@ -248,10 +270,10 @@ export default function Create() {
                   </div>
                 </div>
 
-                {/* 3. Custom Info & Questions */}
+                {/* 4. Custom Info & Questions */}
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-bold flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">4</span>
+                    <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">5</span>
                     Add Your Details
                   </h3>
                   
@@ -292,10 +314,10 @@ export default function Create() {
                   </div>
                 </div>
 
-                {/* 4. Photos */}
+                {/* 5. Photos */}
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-bold flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">5</span>
+                    <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">6</span>
                     Photos
                   </h3>
                   <div className="grid md:grid-cols-2 gap-8">

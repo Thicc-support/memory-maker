@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle, Map, Compass, Trophy, Target, Scroll } from "lucide-react";
+import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle, Map, Compass, Trophy, Target, Scroll, Clock, Hourglass } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Slider } from "@/components/ui/slider";
 
@@ -10,7 +10,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  type?: "text" | "recipient-select" | "recipient-detail-select" | "theme-select" | "format-select" | "photo-upload" | "balance-select";
+  type?: "text" | "recipient-select" | "recipient-detail-select" | "theme-select" | "format-select" | "length-select" | "age-select" | "photo-upload" | "balance-select";
   options?: any;
 }
 
@@ -45,6 +45,9 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     recipientRelationship: "",
     theme: "",
     bookType: "",
+    bookLength: "",
+    recipientName: "",
+    recipientAge: "",
     photos: [] as string[]
   });
 
@@ -100,7 +103,6 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       return;
     }
 
-    // Special logic for "Someone else" if handled via custom input above, but just in case
     // Standard flow
     setDraft(prev => ({ ...prev, [key]: value }));
     addMessage({ id: Date.now().toString(), role: "user", content: value });
@@ -124,9 +126,25 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
         id: "q-format", role: "assistant", content: "Ooh, I love that theme! How should we tell this story?", type: "format-select"
       });
     },
+    askLength: () => {
+       addMessage({
+        id: "q-length", role: "assistant", content: "Got it! How long would you like this story to be?", type: "length-select"
+      });
+    },
+    askName: () => {
+      addMessage({
+        id: "q-name", role: "assistant", content: "Perfect. Now, what is the name of the person this book is for?", type: "text"
+      });
+      setWaitingForInput("recipient_name");
+    },
+    askAge: () => {
+      addMessage({
+        id: "q-age", role: "assistant", content: "And how old are they? This helps us tailor the reading difficulty.", type: "age-select"
+      });
+    },
     askPhotos: () => {
       addMessage({
-        id: "q-photos", role: "assistant", content: "Perfect. To make the illustrations look just right, could you upload a photo of the main character?", type: "photo-upload"
+        id: "q-photos", role: "assistant", content: "Almost there! To make the illustrations look just right, could you upload a photo of the main character?", type: "photo-upload"
       });
     },
     startInterview: () => {
@@ -135,7 +153,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       });
       setTimeout(() => {
         addMessage({
-           id: "q-interview-1", role: "assistant", content: "What is the child's name and age?", type: "text"
+           id: "q-interview-1", role: "assistant", content: "Tell me one specific funny memory involving them.", type: "text"
         });
       }, 1500);
     }
@@ -171,16 +189,30 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     if (waitingForInput === "custom_format") {
       setDraft(prev => ({ ...prev, bookType: input }));
       setWaitingForInput(null);
-      simulateTyping(steps.askPhotos);
+      simulateTyping(steps.askLength);
+      return;
+    }
+
+    if (waitingForInput === "recipient_name") {
+      setDraft(prev => ({ ...prev, recipientName: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askAge);
       return;
     }
     
+    if (waitingForInput === "custom_age") {
+      setDraft(prev => ({ ...prev, recipientAge: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askPhotos);
+      return;
+    }
+
     // Simple logic for the interview phase
     simulateTyping(() => {
       const count = messages.filter(m => m.role === "user").length;
-      if (count > 2) {
-         addMessage({ id: Date.now().toString(), role: "assistant", content: "That's great! Tell me one specific funny memory involving them." });
-         if (count > 3) setTimeout(onComplete, 4000);
+      if (count > 2) { // Just continue interview
+         addMessage({ id: Date.now().toString(), role: "assistant", content: "That's wonderful! Is there a special message or dedication you'd like to include?" });
+         if (count > 4) setTimeout(onComplete, 4000);
       }
     });
   };
@@ -311,7 +343,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
               {msg.type === "format-select" && (
                 <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
                    <div 
-                      onClick={() => handleSelection("bookType", "Story Book", steps.askPhotos)}
+                      onClick={() => handleSelection("bookType", "Story Book", steps.askLength)}
                       className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
                    >
                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Book size={20} /></div>
@@ -321,7 +353,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      </div>
                    </div>
                    <div 
-                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askPhotos)}
+                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askLength)}
                       className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
                    >
                      <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Feather size={20} /></div>
@@ -331,7 +363,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      </div>
                    </div>
                    <div 
-                      onClick={() => handleSelection("bookType", "Something else", steps.askPhotos)}
+                      onClick={() => handleSelection("bookType", "Something else", steps.askLength)}
                       className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
                    >
                      <div className="bg-slate-100 text-slate-600 p-2 rounded-lg"><HelpCircle size={20} /></div>
@@ -340,6 +372,59 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                        <div className="text-xs text-muted-foreground">Custom format</div>
                      </div>
                    </div>
+                </div>
+              )}
+
+              {msg.type === "length-select" && (
+                <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
+                   {[
+                      { id: "short", icon: Clock, label: "Short & Sweet", desc: "5 minute read" },
+                      { id: "standard", icon: Book, label: "Standard Story", desc: "10 minute read" },
+                      { id: "epic", icon: Hourglass, label: "Epic Adventure", desc: "20 minute read" }
+                   ].map(opt => (
+                     <div 
+                        key={opt.id}
+                        onClick={() => handleSelection("bookLength", opt.label, steps.askName)}
+                        className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 ? "pointer-events-none opacity-50" : ""}`}
+                     >
+                       <div className="bg-orange-100 text-orange-600 p-2 rounded-lg"><opt.icon size={20} /></div>
+                       <div>
+                         <div className="font-bold text-sm">{opt.label}</div>
+                         <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                       </div>
+                     </div>
+                   ))}
+                </div>
+              )}
+
+              {msg.type === "age-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
+                   {["0-3 years", "4-7 years", "8-12 years", "13+ years", "Adult"].map(opt => (
+                     <Button 
+                        key={opt} 
+                        variant="outline" 
+                        onClick={() => handleSelection("recipientAge", opt, steps.askPhotos)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "age-select" && waitingForInput === "custom_age")}
+                     >
+                       {opt}
+                     </Button>
+                   ))}
+                   <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
+                        simulateTyping(() => {
+                           addMessage({ id: Date.now().toString(), role: "assistant", content: "Please enter the age:", type: "text" });
+                           setWaitingForInput("custom_age");
+                        });
+                      }}
+                      className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
+                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "age-select" && waitingForInput === "custom_age")}
+                   >
+                     <HelpCircle size={16} className="text-muted-foreground" />
+                     Custom Age
+                   </Button>
                 </div>
               )}
 

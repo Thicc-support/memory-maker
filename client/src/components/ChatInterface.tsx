@@ -10,7 +10,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  type?: "text" | "recipient-select" | "theme-select" | "format-select" | "photo-upload" | "balance-select";
+  type?: "text" | "recipient-select" | "recipient-detail-select" | "theme-select" | "format-select" | "photo-upload" | "balance-select";
   options?: any;
 }
 
@@ -42,6 +42,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   // Draft State
   const [draft, setDraft] = useState({
     recipient: "",
+    recipientRelationship: "",
     theme: "",
     bookType: "",
     photos: [] as string[]
@@ -91,6 +92,16 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       return;
     }
 
+    // Special logic for "A Child" -> asks for specific relationship
+    if (key === "recipient" && value === "A Child") {
+      setDraft(prev => ({ ...prev, [key]: value }));
+      addMessage({ id: Date.now().toString(), role: "user", content: value });
+      simulateTyping(steps.askRecipientDetail);
+      return;
+    }
+
+    // Special logic for "Someone else" if handled via custom input above, but just in case
+    // Standard flow
     setDraft(prev => ({ ...prev, [key]: value }));
     addMessage({ id: Date.now().toString(), role: "user", content: value });
     if (waitingForInput) setWaitingForInput(null);
@@ -98,6 +109,11 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   };
 
   const steps = {
+    askRecipientDetail: () => {
+      addMessage({
+        id: "q-recipient-detail", role: "assistant", content: "How special! Who is the recipient?", type: "recipient-detail-select"
+      });
+    },
     askTheme: () => {
       addMessage({
         id: "q-theme", role: "assistant", content: "Wonderful choice! Now, what kind of adventure should we go on?", type: "theme-select"
@@ -133,6 +149,13 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
 
     if (waitingForInput === "custom_recipient") {
       setDraft(prev => ({ ...prev, recipient: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askTheme);
+      return;
+    }
+
+    if (waitingForInput === "custom_recipient_detail") {
+      setDraft(prev => ({ ...prev, recipientRelationship: input }));
       setWaitingForInput(null);
       simulateTyping(steps.askTheme);
       return;
@@ -204,7 +227,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
               {/* Interactive Elements (Only show for latest assistant message) */}
               {msg.type === "recipient-select" && (
                 <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
-                   {["Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "My Child", "Someone else"].map(opt => (
+                   {["Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "A Child", "Someone else"].map(opt => (
                      <Button 
                         key={opt} 
                         variant="outline" 
@@ -215,6 +238,37 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                        {opt}
                      </Button>
                    ))}
+                </div>
+              )}
+
+              {msg.type === "recipient-detail-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
+                   {["Son", "Daughter", "Niece", "Nephew", "Cousin", "Grandchild"].map(opt => (
+                     <Button 
+                        key={opt} 
+                        variant="outline" 
+                        onClick={() => handleSelection("recipientRelationship", opt, steps.askTheme)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
+                     >
+                       {opt}
+                     </Button>
+                   ))}
+                   <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
+                        simulateTyping(() => {
+                           addMessage({ id: Date.now().toString(), role: "assistant", content: "Who is the recipient?", type: "text" });
+                           setWaitingForInput("custom_recipient_detail");
+                        });
+                      }}
+                      className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all col-span-1 sm:col-span-2"
+                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
+                   >
+                     <HelpCircle size={16} className="text-muted-foreground" />
+                     Something else
+                   </Button>
                 </div>
               )}
 

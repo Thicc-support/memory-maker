@@ -40,6 +40,26 @@ export default function Create() {
   const [customQuestions, setCustomQuestions] = useState<string[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
 
+  // Refs for Auto-Save
+  const draftDataRef = useRef({
+    bookType,
+    textBalance,
+    theme,
+    customInfo,
+    customQuestions
+  });
+
+  // Update ref whenever state changes
+  useEffect(() => {
+    draftDataRef.current = {
+      bookType,
+      textBalance,
+      theme,
+      customInfo,
+      customQuestions
+    };
+  }, [bookType, textBalance, theme, customInfo, customQuestions]);
+
   useEffect(() => {
     // Check auth status mock
     const user = localStorage.getItem("user");
@@ -51,35 +71,29 @@ export default function Create() {
     }
   }, [step]);
 
-  // Simulated Auto-Save Logic
+  // Simulated Auto-Save Logic (Interval based - 15 seconds)
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const saveData = async () => {
+    const intervalId = setInterval(async () => {
       setIsSaving(true);
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      const draftData = {
-        bookType,
-        textBalance,
-        theme,
-        customInfo,
-        customQuestions,
+      const currentData = {
+        ...draftDataRef.current,
         updatedAt: new Date().toISOString()
       };
       
-      localStorage.setItem("currentDraft", JSON.stringify(draftData));
+      localStorage.setItem("currentDraft", JSON.stringify(currentData));
       
       setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       setIsSaving(false);
-    };
+    }, 15000); // 15 seconds
 
-    // Debounce save on changes
-    const timer = setTimeout(saveData, 2000);
-    return () => clearTimeout(timer);
+    return () => clearInterval(intervalId);
 
-  }, [bookType, textBalance, theme, customInfo, customQuestions, isAuthenticated]);
+  }, [isAuthenticated]); // Only re-run if auth status changes
 
   const handleStart = () => {
     if (!isAuthenticated) {

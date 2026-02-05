@@ -77,7 +77,19 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   };
 
   // Interaction Handlers
-  const handleSelection = (key: string, value: string, nextStep: () => void) => {
+  const handleSelection = (key: string, value: string, nextStep: () => void, messageIndex?: number) => {
+    // Handling edits to previous choices
+    if (messageIndex !== undefined && messageIndex < messages.length - 1) {
+      // Slice messages up to the point of change (keeping the question)
+      setMessages(prev => prev.slice(0, messageIndex + 1));
+      
+      // Reset relevant draft parts might be complex, but overwriting via new flow handles most.
+      // We'll let the new flow dictate the state.
+      
+      // Clear waiting state if any
+      setWaitingForInput(null);
+    }
+
     if (value === "Someone else") {
       addMessage({ id: Date.now().toString(), role: "user", content: "Someone else" });
       simulateTyping(() => {
@@ -246,7 +258,7 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
         <AnimatePresence>
-          {messages.map((msg) => (
+          {messages.map((msg, index) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
@@ -276,9 +288,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipient", opt, steps.askSubject)}
+                        onClick={() => handleSelection("recipient", opt, steps.askSubject, index)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
-                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-select" && waitingForInput === "custom_recipient")} // Allow if waiting for custom recipient
                      >
                        {opt}
                      </Button>
@@ -292,9 +303,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipientRelationship", opt, steps.askSubject)}
+                        onClick={() => handleSelection("recipientRelationship", opt, steps.askSubject, index)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
-                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
                      >
                        {opt}
                      </Button>
@@ -302,6 +312,12 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    <Button 
                       variant="outline" 
                       onClick={() => {
+                        // For "Someone else" button in edit mode, we just trigger it like a normal selection but with index
+                         if (index < messages.length - 1) {
+                            setMessages(prev => prev.slice(0, index + 1));
+                            setWaitingForInput(null);
+                         }
+                        
                         addMessage({ id: Date.now().toString(), role: "user", content: "Someone else" });
                         simulateTyping(() => {
                            addMessage({ id: Date.now().toString(), role: "assistant", content: "Who is the recipient?", type: "text" });
@@ -309,7 +325,6 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                         });
                       }}
                       className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all col-span-1 sm:col-span-2"
-                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "recipient-detail-select" && waitingForInput === "custom_recipient_detail")}
                    >
                      <HelpCircle size={16} className="text-muted-foreground" />
                      Someone else
@@ -323,9 +338,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("subject", opt, steps.askTheme)}
+                        onClick={() => handleSelection("subject", opt, steps.askTheme, index)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
-                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "subject-select" && waitingForInput === "custom_subject")}
                      >
                        {opt}
                      </Button>
@@ -349,9 +363,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt.id} 
                         variant="outline" 
-                        onClick={() => handleSelection("theme", opt.label, steps.askFormat)}
+                        onClick={() => handleSelection("theme", opt.label, steps.askFormat, index)}
                         className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
-                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "theme-select" && waitingForInput === "custom_theme")}
                      >
                        <opt.icon size={16} className="text-primary" />
                        {opt.label}
@@ -359,9 +372,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    ))}
                    <Button 
                       variant="outline" 
-                      onClick={() => handleSelection("theme", "Something else", steps.askFormat)}
+                      onClick={() => handleSelection("theme", "Something else", steps.askFormat, index)}
                       className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all col-span-2"
-                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "theme-select" && waitingForInput === "custom_theme")}
                    >
                      <HelpCircle size={16} className="text-muted-foreground" />
                      Something else
@@ -372,8 +384,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
               {msg.type === "format-select" && (
                 <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
                    <div 
-                      onClick={() => handleSelection("bookType", "Story Book", steps.askLength)}
-                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
+                      onClick={() => handleSelection("bookType", "Story Book", steps.askLength, index)}
+                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                    >
                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Book size={20} /></div>
                      <div>
@@ -382,8 +394,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      </div>
                    </div>
                    <div 
-                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askLength)}
-                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
+                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askLength, index)}
+                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                    >
                      <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Feather size={20} /></div>
                      <div>
@@ -392,8 +404,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      </div>
                    </div>
                    <div 
-                      onClick={() => handleSelection("bookType", "Something else", steps.askLength)}
-                      className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "format-select" && waitingForInput === "custom_format") ? "pointer-events-none opacity-50" : ""}`}
+                      onClick={() => handleSelection("bookType", "Something else", steps.askLength, index)}
+                      className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                    >
                      <div className="bg-slate-100 text-slate-600 p-2 rounded-lg"><HelpCircle size={20} /></div>
                      <div>
@@ -413,8 +425,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    ].map(opt => (
                      <div 
                         key={opt.id}
-                        onClick={() => handleSelection("bookLength", opt.label, steps.askName)}
-                        className={`cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center ${messages.indexOf(msg) !== messages.length - 1 ? "pointer-events-none opacity-50" : ""}`}
+                        onClick={() => handleSelection("bookLength", opt.label, steps.askName, index)}
+                        className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                      >
                        <div className="bg-orange-100 text-orange-600 p-2 rounded-lg"><opt.icon size={20} /></div>
                        <div>
@@ -432,9 +444,8 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipientAge", opt, steps.askPhotos)}
+                        onClick={() => handleSelection("recipientAge", opt, steps.askPhotos, index)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
-                        disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "age-select" && waitingForInput === "custom_age")}
                      >
                        {opt}
                      </Button>
@@ -442,6 +453,12 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                    <Button 
                       variant="outline" 
                       onClick={() => {
+                        // Special edit handling for custom age button
+                        if (index < messages.length - 1) {
+                           setMessages(prev => prev.slice(0, index + 1));
+                           setWaitingForInput(null);
+                        }
+                        
                         addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
                         simulateTyping(() => {
                            addMessage({ id: Date.now().toString(), role: "assistant", content: "Please enter the age:", type: "text" });
@@ -449,7 +466,6 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                         });
                       }}
                       className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
-                      disabled={messages.indexOf(msg) !== messages.length - 1 && !(msg.type === "age-select" && waitingForInput === "custom_age")}
                    >
                      <HelpCircle size={16} className="text-muted-foreground" />
                      Custom Age

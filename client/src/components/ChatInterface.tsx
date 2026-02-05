@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle } from "lucide-react";
+import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle, Map, Compass, Trophy, Target, Scroll } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Slider } from "@/components/ui/slider";
 
@@ -222,8 +222,13 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
                 <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
                    {[
                       { id: "adventure", icon: Globe, label: "Adventure" },
+                      { id: "travel", icon: Map, label: "Travel" },
+                      { id: "exploration", icon: Compass, label: "Exploration" },
                       { id: "career", icon: Briefcase, label: "My Career" },
                       { id: "hobby", icon: Heart, label: "My Hobbies" },
+                      { id: "challenges", icon: Trophy, label: "Challenges" },
+                      { id: "missions", icon: Target, label: "Missions" },
+                      { id: "quests", icon: Scroll, label: "Quests" },
                       { id: "fantasy", icon: Star, label: "Fantasy" },
                     ].map(opt => (
                      <Button 

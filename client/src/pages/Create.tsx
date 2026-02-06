@@ -33,6 +33,12 @@ const BOOK_STYLES = [
     description: "Magical atmosphere with dramatic lighting and detail.",
     image: "/images/style-fantasy.png",
   },
+  {
+    id: "family",
+    title: "Family Memories",
+    description: "Warm, nostalgic scrapbook style perfect for real-life adventures.",
+    image: "/images/style-family.png",
+  },
 ];
 
 export default function Create() {

@@ -20,15 +20,60 @@ interface ChatInterfaceProps {
 }
 
 const themeQuestions: Record<string, string[]> = {
-  "Adventure": ["What is the biggest challenge they have overcome?", "Who is their favorite sidekick?"],
-  "Travel": ["What is the most memorable place they have visited?", "What's a funny thing that happened on a trip?"],
-  "Exploration": ["What kind of things do they like to discover or investigate?", "If they could explore anywhere, where would it be?"],
-  "My Career": ["What is their dream job or current profession?", "What do they love most about their work?"],
-  "My Hobbies": ["What is their absolute favorite hobby or pastime?", "How did they get started with this hobby?"],
-  "Challenges": ["Tell me about a time they didn't give up.", "What motivates them to keep going?"],
-  "Missions": ["If they were a secret agent, what would their mission be?", "What is their special skill?"],
-  "Quests": ["What is the 'treasure' they are always searching for?", "Who helps them on their quest?"],
-  "Fantasy": ["If they had a magic power, what would it be?", "What kind of magical creature would be their friend?"],
+  "Adventure": [
+    "What is the biggest challenge they have overcome?",
+    "Who is their favorite sidekick or companion?",
+    "If they could explore any dangerous place, where would they go?",
+    "What magical item would they take on their journey?"
+  ],
+  "Travel": [
+    "What is the most memorable place they have visited?",
+    "What's a funny thing that happened on a trip?",
+    "What is their favorite way to travel (plane, train, boat, etc.)?",
+    "If they could teleport anywhere right now, where would it be?"
+  ],
+  "Exploration": [
+    "What kind of things do they like to discover or investigate?",
+    "If they could explore anywhere, where would it be?",
+    "What tools would they bring on an expedition?",
+    "What mystery would they love to solve?"
+  ],
+  "My Career": [
+    "What is their dream job or current profession?",
+    "What do they love most about their work?",
+    "What is a funny workplace story they tell?",
+    "If they could do any job for one day, what would it be?"
+  ],
+  "My Hobbies": [
+    "What is their absolute favorite hobby or pastime?",
+    "How did they get started with this hobby?",
+    "What is their proudest achievement in this hobby?",
+    "If they could turn this hobby into a superpower, what would it be?"
+  ],
+  "Challenges": [
+    "Tell me about a time they didn't give up.",
+    "What motivates them to keep going?",
+    "Who helped them when things got tough?",
+    "How did they celebrate their success?"
+  ],
+  "Missions": [
+    "If they were a secret agent, what would their mission be?",
+    "What is their special skill or gadget?",
+    "Who is their nemesis or rival?",
+    "What is the code name for their secret operation?"
+  ],
+  "Quests": [
+    "What is the 'treasure' they are always searching for?",
+    "Who helps them on their quest?",
+    "What obstacles stand in their way?",
+    "Where does the map lead them?"
+  ],
+  "Fantasy": [
+    "If they had a magic power, what would it be?",
+    "What kind of magical creature would be their friend?",
+    "If they had a castle, what would it look like?",
+    "What spell would they cast most often?"
+  ],
 };
 
 export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps) {

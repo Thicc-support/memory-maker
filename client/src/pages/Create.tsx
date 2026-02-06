@@ -4,14 +4,44 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { BookPreview } from "@/components/BookPreview";
 import { AuthModal } from "@/components/AuthModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, CheckCircle } from "lucide-react";
+import { Save, CheckCircle, ArrowRight, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const BOOK_STYLES = [
+  {
+    id: "classic",
+    title: "Classic Timeless",
+    description: "Elegant leather-bound aesthetic with serif typography.",
+    image: "/images/style-classic.png",
+  },
+  {
+    id: "whimsical",
+    title: "Playful & Whimsical",
+    description: "Bright colors and fun illustrations perfect for kids.",
+    image: "/images/style-whimsical.png",
+  },
+  {
+    id: "modern",
+    title: "Clean Modern",
+    description: "Minimalist design with bold shapes and ample whitespace.",
+    image: "/images/style-modern.png",
+  },
+  {
+    id: "fantasy",
+    title: "Epic Fantasy",
+    description: "Magical atmosphere with dramatic lighting and detail.",
+    image: "/images/style-fantasy.png",
+  },
+];
 
 export default function Create() {
-  const [step, setStep] = useState<"chat" | "generating" | "preview">("chat");
+  const [step, setStep] = useState<"chat" | "style" | "generating" | "preview">("chat");
   const [showAuth, setShowAuth] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   
   // Draft Data State (Managed by ChatInterface now)
   const [draftData, setDraftData] = useState<any>({});
@@ -32,6 +62,7 @@ export default function Create() {
       
       const currentData = {
         ...draftData,
+        selectedStyle,
         updatedAt: new Date().toISOString()
       };
       
@@ -42,7 +73,7 @@ export default function Create() {
 
     const timer = setTimeout(saveData, 2000);
     return () => clearTimeout(timer);
-  }, [draftData, isAuthenticated]);
+  }, [draftData, isAuthenticated, selectedStyle]);
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -55,7 +86,7 @@ export default function Create() {
       
       {/* Auto-Save Indicator */}
       <AnimatePresence>
-        {isAuthenticated && step === "chat" && (
+        {isAuthenticated && (step === "chat" || step === "style") && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,9 +118,78 @@ export default function Create() {
             <h1 className="font-heading text-3xl font-bold mb-8 text-center">Tell us your story</h1>
             <div className="w-full">
               <ChatInterface 
-                onComplete={() => setStep("generating")} 
+                onComplete={() => setStep("style")} 
                 onUpdateDraft={setDraftData}
               />
+            </div>
+          </motion.div>
+        )}
+
+        {step === "style" && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-5xl mx-auto"
+          >
+             <div className="text-center mb-12">
+              <h1 className="font-heading text-3xl font-bold mb-3">Choose your book's style</h1>
+              <p className="text-muted-foreground text-lg">Select a visual theme that best fits your story.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {BOOK_STYLES.map((style) => (
+                <div 
+                  key={style.id}
+                  onClick={() => setSelectedStyle(style.id)}
+                  className={cn(
+                    "group cursor-pointer rounded-xl border-2 overflow-hidden transition-all duration-300 relative bg-white",
+                    selectedStyle === style.id 
+                      ? "border-primary ring-4 ring-primary/10 scale-[1.02] shadow-xl" 
+                      : "border-transparent hover:border-slate-200 hover:shadow-lg shadow-sm"
+                  )}
+                >
+                  <div className="aspect-[2/3] relative overflow-hidden bg-slate-100">
+                    <img 
+                      src={style.image} 
+                      alt={style.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {selectedStyle === style.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[1px]">
+                        <div className="bg-white rounded-full p-2 shadow-lg">
+                          <Check className="w-6 h-6 text-primary" strokeWidth={3} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-heading font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
+                      {style.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {style.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-center gap-4">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => setStep("chat")}
+              >
+                Back to Story
+              </Button>
+              <Button 
+                size="lg"
+                className="px-8"
+                disabled={!selectedStyle}
+                onClick={() => setStep("generating")}
+              >
+                Create My Book <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
             </div>
           </motion.div>
         )}

@@ -14,36 +14,44 @@ export default function Home() {
       
       <section id="examples" className="py-24 container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="font-heading text-4xl font-bold mb-4 text-primary-foreground">Discover the Magic</h2>
+          <h2 className="font-heading text-4xl font-bold mb-4 text-primary-foreground">Discover the Possibilities</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Explore our most popular themes. Each book is uniquely written based on your family's real stories.
+             From professional journeys to cherished hobbies, turn any life experience into a beautiful book.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <BookCard 
-            title="Mommy's Space Mission"
-            description="Perfect for moms with careers in science, tech, or who just reach for the stars. A story about dreaming big."
-            ageRange="Ages 3-8"
-            theme="Space"
-            image={coverSpace}
+            title="My Career Journey"
+            description="Document your professional path, lessons learned, and advice for the next generation."
+            ageRange="Adults"
+            theme="Career"
+            image="/images/example-career.png"
             delay={0}
           />
           <BookCard 
-            title="Grandpa's Jungle Journey"
-            description="For the adventurous grandparent. Turn their travel stories or backyard explorations into an epic safari."
-            ageRange="Ages 4-10"
-            theme="Adventure"
-            image={coverJungle}
+            title="The Master Gardener"
+            description="Capture the beauty of your garden and share your tips and tricks for a green thumb."
+            ageRange="All Ages"
+            theme="Hobby"
+            image="/images/example-hobby.png"
             delay={0.1}
           />
            <BookCard 
-            title="Auntie's Secret Garden"
-            description="A whimsical tale about nature, growth, and the magic found in everyday plants and flowers."
-            ageRange="Ages 2-6"
-            theme="Nature"
-            image={coverSpace} // Placeholder reuse
+            title="World Explorer"
+            description="A visual journey through all the places you've been and the adventures you've had."
+            ageRange="All Ages"
+            theme="Travel"
+            image="/images/example-travel.png"
             delay={0.2}
+          />
+          <BookCard 
+            title="Grandma's Kitchen"
+            description="Preserve family recipes and the stories behind them in a beautiful cookbook."
+            ageRange="All Ages"
+            theme="Cooking"
+            image="/images/example-cooking.png"
+            delay={0.3}
           />
         </div>
       </section>

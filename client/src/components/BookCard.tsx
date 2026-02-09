@@ -9,15 +9,17 @@ interface BookCardProps {
   ageRange: string;
   theme: string;
   delay?: number;
+  onClick?: () => void;
 }
 
-export function BookCard({ title, description, image, ageRange, theme, delay = 0 }: BookCardProps) {
+export function BookCard({ title, description, image, ageRange, theme, delay = 0, onClick }: BookCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
+      onClick={onClick}
       className="group relative bg-white rounded-2xl overflow-hidden shadow-lg border border-border/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
     >
       <div className="aspect-[3/4] overflow-hidden relative">
@@ -33,6 +35,12 @@ export function BookCard({ title, description, image, ageRange, theme, delay = 0
             {theme}
           </span>
         </div>
+
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+           <span className="px-6 py-2 bg-white/90 backdrop-blur rounded-full text-sm font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+             Click to Preview
+           </span>
+        </div>
       </div>
       
       <div className="p-6">
@@ -44,11 +52,9 @@ export function BookCard({ title, description, image, ageRange, theme, delay = 0
           {description}
         </p>
         
-        <Link href={`/create?template=${theme.toLowerCase()}`}>
-          <div className="flex items-center text-primary font-bold text-sm group/btn">
-            Create this book <ArrowRight size={16} className="ml-1 group-hover/btn:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+        <div className="flex items-center text-primary font-bold text-sm group/btn">
+            Preview Book <ArrowRight size={16} className="ml-1 group-hover/btn:translate-x-1 transition-transform" />
+        </div>
       </div>
     </motion.div>
   );

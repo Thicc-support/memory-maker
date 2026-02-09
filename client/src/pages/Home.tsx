@@ -12,8 +12,20 @@ const EXAMPLE_BOOKS = [
     ageRange: "Adults",
     theme: "Career",
     image: "/images/example-career.png",
-    pageImage: "/images/page-career.png",
-    pageText: "Even when gravity tries to pull you down, keep your eyes on the stars. The view from up here is worth every step of the climb."
+    pages: [
+      {
+        text: "Even when gravity tries to pull you down, keep your eyes on the stars. The view from up here is worth every step of the climb.",
+        image: "/images/page-career.png"
+      },
+      {
+        text: "Training to be an astronaut takes hard work! Lifting heavy weights and studying star maps is how we prepare for lift-off.",
+        image: "/images/page-career-2.png"
+      },
+      {
+        text: "We finally made it! Planting our flag on a new world, we wave hello to our new alien friends. Mission accomplished!",
+        image: "/images/page-career-3.png"
+      }
+    ]
   },
   {
     title: "The Master Gardener",
@@ -21,8 +33,20 @@ const EXAMPLE_BOOKS = [
     ageRange: "All Ages",
     theme: "Hobby",
     image: "/images/example-hobby.png",
-    pageImage: "/images/page-hobby.png",
-    pageText: "The secret to the biggest pumpkins isn't just water and sun—it's whispering kind words to them every morning!"
+    pages: [
+      {
+        text: "The secret to the biggest pumpkins isn't just water and sun—it's whispering kind words to them every morning!",
+        image: "/images/page-hobby.png"
+      },
+      {
+        text: "First, we dig a little hole and tuck the seeds into their cozy bed. The rain clouds come to give them a drink.",
+        image: "/images/page-hobby-2.png"
+      },
+      {
+        text: "Look what grew! A giant prize-winning pumpkin. I'm going to need a bigger wheelbarrow for this one!",
+        image: "/images/page-hobby-3.png"
+      }
+    ]
   },
   {
     title: "World Explorer",
@@ -30,8 +54,20 @@ const EXAMPLE_BOOKS = [
     ageRange: "All Ages",
     theme: "Travel",
     image: "/images/example-travel.png",
-    pageImage: "/images/page-travel.png",
-    pageText: "We packed our bags, grabbed our passports, and flew across the ocean to see the city of lights. Bonjour, Paris!"
+    pages: [
+      {
+        text: "We packed our bags, grabbed our passports, and flew across the ocean to see the city of lights. Bonjour, Paris!",
+        image: "/images/page-travel.png"
+      },
+      {
+        text: "Checking the map is part of the adventure. Are we lost? No, we're just taking the scenic route!",
+        image: "/images/page-travel-2.png"
+      },
+      {
+        text: "Finally, time to relax on the beach. The sun is warm, the coconut water is sweet, and the waves are singing to us.",
+        image: "/images/page-travel-3.png"
+      }
+    ]
   },
   {
     title: "Grandma's Kitchen",
@@ -39,8 +75,20 @@ const EXAMPLE_BOOKS = [
     ageRange: "All Ages",
     theme: "Cooking",
     image: "/images/example-cooking.png",
-    pageImage: "/images/page-cooking.png",
-    pageText: "A little bit of flour on your nose means you're doing it right! Baking cookies is the tastiest kind of magic."
+    pages: [
+      {
+        text: "A little bit of flour on your nose means you're doing it right! Baking cookies is the tastiest kind of magic.",
+        image: "/images/page-cooking.png"
+      },
+      {
+        text: "Mix, mix, swirl! The batter is getting thick and sticky. Watch out for flying spoons!",
+        image: "/images/page-cooking-2.png"
+      },
+      {
+        text: "Dinner is served! The best part of cooking is sharing a big meal with everyone we love.",
+        image: "/images/page-cooking-3.png"
+      }
+    ]
   }
 ];
 

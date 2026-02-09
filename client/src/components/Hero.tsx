@@ -35,9 +35,11 @@ export function Hero() {
                 <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-2 bg-transparent hover:bg-white/50">
-              View Examples
-            </Button>
+            <a href="#examples">
+              <Button variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-2 bg-transparent hover:bg-white/50 cursor-pointer">
+                View Examples
+              </Button>
+            </a>
           </div>
         </motion.div>
         

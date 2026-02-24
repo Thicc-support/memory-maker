@@ -102,13 +102,64 @@ export function setupAuth(app: Express) {
       }
 
       const hashed = await hashPassword(password);
+      const verificationToken = randomBytes(32).toString("hex");
       const user = await storage.createUser({ email, name, password: hashed });
+
+      await storage.updateUser(user.id, { verificationToken });
+
+      console.log(`[Email Verification] Token for ${email}: ${verificationToken}`);
+      console.log(`[Email Verification] Verify URL: /api/auth/verify-email?token=${verificationToken}`);
 
       req.login(user, (err) => {
         if (err) return next(err);
         const { password: _, ...safeUser } = user;
         res.status(201).json(safeUser);
       });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get("/api/auth/verify-email", async (req, res, next) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Invalid token" });
+      }
+
+      const allUsers = await pool.query("SELECT * FROM users WHERE verification_token = $1", [token]);
+      if (allUsers.rows.length === 0) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      const userId = allUsers.rows[0].id;
+      await storage.updateUser(userId, { emailVerified: true, verificationToken: null });
+
+      res.json({ message: "Email verified successfully" });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post("/api/auth/resend-verification", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.user!.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      if (user.emailVerified) {
+        return res.json({ message: "Email already verified" });
+      }
+
+      const verificationToken = randomBytes(32).toString("hex");
+      await storage.updateUser(user.id, { verificationToken });
+
+      console.log(`[Email Verification] Resent token for ${user.email}: ${verificationToken}`);
+
+      res.json({ message: "Verification email sent" });
     } catch (err) {
       next(err);
     }

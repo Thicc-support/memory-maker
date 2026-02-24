@@ -17,6 +17,7 @@ interface Message {
 interface ChatInterfaceProps {
   onComplete: () => void;
   onUpdateDraft: (data: any) => void;
+  initialDraft?: any;
 }
 
 const themeQuestions: Record<string, string[]> = {
@@ -76,7 +77,7 @@ const themeQuestions: Record<string, string[]> = {
   ],
 };
 
-export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps) {
+export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -96,7 +97,6 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
   const [waitingForInput, setWaitingForInput] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Draft State
   const [draft, setDraft] = useState({
     recipient: "",
     recipientRelationship: "",
@@ -106,7 +106,9 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
     bookLength: "",
     recipientName: "",
     recipientAge: "",
-    photos: [] as string[]
+    photos: [] as string[],
+    interviewAnswers: {} as Record<string, string>,
+    messages: [] as any[],
   });
 
   const scrollToBottom = () => {
@@ -306,50 +308,35 @@ export function ChatInterface({ onComplete, onUpdateDraft }: ChatInterfaceProps)
       return;
     }
 
-    // Simple logic for the interview phase
+    const userAnswer = input;
     simulateTyping(() => {
-      const count = messages.filter(m => m.role === "user").length;
-      if (count > 2) { // Just continue interview
-         // Check if we have a second question for the theme
-         const theme = draft.theme; // This draft might be stale if inside closure of handleSend created earlier?
-         // handleSend is recreated on every render.
-         // But wait, if we are in the interview loop, `draft` hasn't changed recently. So it's fine.
-         
-         const questions = themeQuestions[theme] || ["Tell me one specific funny memory involving them."];
-         
-         // Basic logic to ask the second question if we haven't asked it yet?
-         // We don't track which question was asked.
-         // Let's just ask the second question if it exists and we are at a certain stage.
-         // Current count > 2 means we are in interview.
-         // Let's assume:
-         // 1. Photo upload done -> startInterview -> Ask Question 1
-         // 2. User answers Q1 -> handleSend -> Ask Question 2 (if exists) or "Special message"
-         
-         // We need to know how many interview questions we've asked.
-         // A simple hack: check the last assistant message content? Or just use a simple counter based on total messages?
-         // Let's use message count.
-         // Messages length will be roughly:
-         // Welcome (1) + Recipient Q (1) + Ans (1) + [Detail Q+A] + Subject Q(1) + Ans(1) + Theme Q(1) + Ans(1) + Format Q(1) + Ans(1) + Length Q(1) + Ans(1) + Name Q(1) + Ans(1) + Age Q(1) + Ans(1) + Photo Q(1) + Ans("Photos uploaded!")(1) + Start Interview Intro(1) + Interview Q1(1) = ~20 messages
-         
-         // This is getting complicated to count. Let's just look at the last assistant question.
-         const lastAssistantMsg = messages.filter(m => m.role === "assistant").pop();
-         
-         if (lastAssistantMsg && questions.includes(lastAssistantMsg.content)) {
-            // We just asked a theme question.
-            const index = questions.indexOf(lastAssistantMsg.content);
-            if (index < questions.length - 1) {
-               addMessage({ id: Date.now().toString(), role: "assistant", content: questions[index + 1] });
-               return;
-            }
-         }
-         
-         addMessage({ id: Date.now().toString(), role: "assistant", content: "That's wonderful! Is there a special message or dedication you'd like to include?" });
-         
-         // Only complete after dedication
-         if (lastAssistantMsg?.content.includes("special message")) {
-             setTimeout(onComplete, 4000);
-         }
+      const theme = draft.theme;
+      const questions = themeQuestions[theme] || ["Tell me one specific funny memory involving them."];
+      const lastAssistantMsg = messages.filter(m => m.role === "assistant").pop();
+
+      if (lastAssistantMsg) {
+        setDraft(prev => ({
+          ...prev,
+          interviewAnswers: { ...prev.interviewAnswers, [lastAssistantMsg.content]: userAnswer },
+          messages: [...messages, { id: Date.now().toString(), role: "user", content: userAnswer }],
+        }));
       }
+
+      if (lastAssistantMsg && questions.includes(lastAssistantMsg.content)) {
+        const index = questions.indexOf(lastAssistantMsg.content);
+        if (index < questions.length - 1) {
+          addMessage({ id: Date.now().toString(), role: "assistant", content: questions[index + 1] });
+          return;
+        }
+      }
+
+      if (lastAssistantMsg?.content.includes("special message")) {
+        addMessage({ id: Date.now().toString(), role: "assistant", content: "Perfect! I have everything I need to create your book. Click the button below to continue to style selection!" });
+        setTimeout(onComplete, 2000);
+        return;
+      }
+
+      addMessage({ id: Date.now().toString(), role: "assistant", content: "That's wonderful! Is there a special message or dedication you'd like to include?" });
     });
   };
 

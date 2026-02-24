@@ -6,6 +6,7 @@ import { BookCard } from "@/components/BookCard";
 import { BookPreviewModal } from "@/components/BookPreviewModal";
 import { Testimonials } from "@/components/Testimonials";
 import { FAQ } from "@/components/FAQ";
+import { PricingSection } from "@/components/PricingSection";
 
 const EXAMPLE_BOOKS = [
   {
@@ -203,6 +204,7 @@ export default function Home() {
         </div>
       </section>
 
+      <PricingSection />
       <Testimonials />
       <FAQ />
 

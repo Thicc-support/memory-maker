@@ -4,10 +4,11 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { BookPreview } from "@/components/BookPreview";
 import { AuthModal } from "@/components/AuthModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, CheckCircle, ArrowRight, Check } from "lucide-react";
+import { Save, CheckCircle, ArrowRight, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { useSearch } from "wouter";
 
 const BOOK_STYLES = [
   {
@@ -49,9 +50,47 @@ export default function Create() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [loadedDraft, setLoadedDraft] = useState<any>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generatedBook, setGeneratedBook] = useState<any>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const { user } = useAuth();
-  
+  const searchString = useSearch();
+
   const [draftData, setDraftData] = useState<any>({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const draftParam = params.get("draft");
+    if (draftParam && user) {
+      setDraftId(draftParam);
+      fetch(`/api/drafts/${draftParam}`, { credentials: "include" })
+        .then(r => {
+          if (r.ok) return r.json();
+          throw new Error("Draft not found");
+        })
+        .then(draft => {
+          setLoadedDraft(draft);
+          setDraftData({
+            recipient: draft.recipient,
+            recipientRelationship: draft.recipientRelationship,
+            subject: draft.subject,
+            theme: draft.theme,
+            bookType: draft.bookType,
+            bookLength: draft.bookLength,
+            recipientName: draft.recipientName,
+            recipientAge: draft.recipientAge,
+          });
+          if (draft.selectedStyle) {
+            setSelectedStyle(draft.selectedStyle);
+          }
+          if (draft.step === "style" || draft.step === "generating" || draft.step === "preview") {
+            setStep("style");
+          }
+        })
+        .catch(() => {});
+    }
+  }, [searchString, user]);
 
   useEffect(() => {
     if (!user || Object.keys(draftData).length === 0) return;
@@ -72,6 +111,8 @@ export default function Create() {
           selectedStyle,
           step,
           progress: step === "chat" ? 30 : step === "style" ? 60 : 90,
+          interviewAnswers: draftData.interviewAnswers || {},
+          messages: draftData.messages || [],
         };
 
         if (draftId) {
@@ -103,19 +144,81 @@ export default function Create() {
     return () => clearTimeout(timer);
   }, [draftData, user, selectedStyle, step]);
 
+  const handleGenerateBook = async () => {
+    setStep("generating");
+    setGenerationError(null);
+    setGenerationProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setGenerationProgress(prev => {
+        if (prev >= 90) return 90;
+        return prev + Math.random() * 8;
+      });
+    }, 3000);
+
+    try {
+      const res = await fetch("/api/generate/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draftId,
+          selectedStyle: selectedStyle || "whimsical",
+          recipientName: draftData.recipientName,
+          recipientAge: draftData.recipientAge,
+          theme: draftData.theme,
+          subject: draftData.subject,
+          bookType: draftData.bookType,
+          interviewAnswers: draftData.interviewAnswers || {},
+          messages: draftData.messages || [],
+          title: draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story",
+        }),
+        credentials: "include",
+      });
+
+      clearInterval(progressInterval);
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Generation failed");
+      }
+
+      const book = await res.json();
+      setGeneratedBook(book);
+      setGenerationProgress(100);
+      setTimeout(() => setStep("preview"), 500);
+    } catch (err: any) {
+      clearInterval(progressInterval);
+      setGenerationError(err.message || "Something went wrong during generation");
+      setGenerationProgress(0);
+    }
+  };
+
+  const handleFavorite = async () => {
+    if (!generatedBook) return;
+    try {
+      await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId: generatedBook.id }),
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Failed to favorite:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50">
       <Navbar />
-      <AuthModal 
-        isOpen={showAuth} 
-        onOpenChange={setShowAuth} 
-        onLoginSuccess={() => {}} 
+      <AuthModal
+        isOpen={showAuth}
+        onOpenChange={setShowAuth}
+        onLoginSuccess={() => {}}
       />
-      
-      {/* Auto-Save Indicator */}
+
       <AnimatePresence>
         {user && (step === "chat" || step === "style") && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -126,59 +229,61 @@ export default function Create() {
                 <Save size={12} className="animate-pulse" />
                 Saving...
               </>
-            ) : (
+            ) : lastSaved ? (
               <>
                 <CheckCircle size={12} className="text-green-500" />
                 Saved at {lastSaved}
               </>
-            )}
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <div className="container mx-auto px-6 py-12">
         {step === "chat" && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center"
           >
-            <h1 className="font-heading text-3xl font-bold mb-8 text-center">Tell us your story</h1>
+            <h1 className="font-heading text-3xl font-bold mb-8 text-center" data-testid="text-create-title">Tell us your story</h1>
             <div className="w-full">
-              <ChatInterface 
-                onComplete={() => setStep("style")} 
+              <ChatInterface
+                onComplete={() => setStep("style")}
                 onUpdateDraft={setDraftData}
+                initialDraft={loadedDraft}
               />
             </div>
           </motion.div>
         )}
 
         {step === "style" && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-5xl mx-auto"
           >
-             <div className="text-center mb-12">
-              <h1 className="font-heading text-3xl font-bold mb-3">Choose your book's style</h1>
+            <div className="text-center mb-12">
+              <h1 className="font-heading text-3xl font-bold mb-3" data-testid="text-style-title">Choose your book's style</h1>
               <p className="text-muted-foreground text-lg">Select a visual theme that best fits your story.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               {BOOK_STYLES.map((style) => (
-                <div 
+                <div
                   key={style.id}
                   onClick={() => setSelectedStyle(style.id)}
+                  data-testid={`card-style-${style.id}`}
                   className={cn(
                     "group cursor-pointer rounded-xl border-2 overflow-hidden transition-all duration-300 relative bg-white",
-                    selectedStyle === style.id 
-                      ? "border-primary ring-4 ring-primary/10 scale-[1.02] shadow-xl" 
+                    selectedStyle === style.id
+                      ? "border-primary ring-4 ring-primary/10 scale-[1.02] shadow-xl"
                       : "border-transparent hover:border-slate-200 hover:shadow-lg shadow-sm"
                   )}
                 >
                   <div className="aspect-[2/3] relative overflow-hidden bg-slate-100">
-                    <img 
-                      src={style.image} 
+                    <img
+                      src={style.image}
                       alt={style.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -203,18 +308,20 @@ export default function Create() {
             </div>
 
             <div className="flex justify-center gap-4">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
                 onClick={() => setStep("chat")}
+                data-testid="button-back-to-story"
               >
                 Back to Story
               </Button>
-              <Button 
+              <Button
                 size="lg"
                 className="px-8"
                 disabled={!selectedStyle}
-                onClick={() => setStep("generating")}
+                onClick={handleGenerateBook}
+                data-testid="button-create-book"
               >
                 Create My Book <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -223,33 +330,63 @@ export default function Create() {
         )}
 
         {step === "generating" && (
-          <motion.div 
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             onAnimationComplete={() => setTimeout(() => setStep("preview"), 4000)}
-             className="flex flex-col items-center justify-center min-h-[50vh] text-center"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center min-h-[50vh] text-center"
           >
-            <div className="relative w-32 h-32 mb-8">
-              <div className="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-                <span className="text-4xl">✨</span>
-              </div>
-            </div>
-            <h2 className="font-heading text-2xl font-bold mb-2">Weaving your tale...</h2>
-            <p className="text-muted-foreground max-w-md">
-              Our AI elves are writing the text, drawing the pictures, and binding the magic together.
-            </p>
+            {generationError ? (
+              <>
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                  <span className="text-2xl">😞</span>
+                </div>
+                <h2 className="font-heading text-2xl font-bold mb-2" data-testid="text-generation-error">Something went wrong</h2>
+                <p className="text-muted-foreground max-w-md mb-6">{generationError}</p>
+                <div className="flex gap-4">
+                  <Button variant="outline" onClick={() => setStep("style")} data-testid="button-back-to-style">
+                    Go Back
+                  </Button>
+                  <Button onClick={handleGenerateBook} data-testid="button-retry-generation">
+                    Try Again
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="relative w-32 h-32 mb-8">
+                  <div className="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary">{Math.round(generationProgress)}%</span>
+                  </div>
+                </div>
+                <h2 className="font-heading text-2xl font-bold mb-2" data-testid="text-generating">Weaving your tale...</h2>
+                <p className="text-muted-foreground max-w-md mb-4">
+                  Our AI is writing the story and creating custom illustrations for each page. This may take a minute or two.
+                </p>
+                <div className="w-64 h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${generationProgress}%` }}
+                  />
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 
-        {step === "preview" && (
-           <motion.div 
+        {step === "preview" && generatedBook && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-           >
-             <BookPreview />
-           </motion.div>
+          >
+            <BookPreview
+              bookId={generatedBook.id}
+              title={generatedBook.title}
+              pages={generatedBook.pages}
+              onFavorite={handleFavorite}
+            />
+          </motion.div>
         )}
       </div>
     </div>

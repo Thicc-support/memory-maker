@@ -4,6 +4,8 @@ import { Hero } from "@/components/Hero";
 import { ProcessSteps } from "@/components/ProcessSteps";
 import { BookCard } from "@/components/BookCard";
 import { BookPreviewModal } from "@/components/BookPreviewModal";
+import { Testimonials } from "@/components/Testimonials";
+import { FAQ } from "@/components/FAQ";
 
 const EXAMPLE_BOOKS = [
   {
@@ -200,6 +202,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <Testimonials />
+      <FAQ />
 
       <BookPreviewModal 
         isOpen={!!selectedBook}

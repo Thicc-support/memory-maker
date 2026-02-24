@@ -30,6 +30,10 @@ declare global {
       email: string;
       name: string;
       password: string;
+      emailVerified: boolean;
+      verificationToken: string | null;
+      resetToken: string | null;
+      resetTokenExpiry: Date | null;
       createdAt: Date | null;
     }
   }

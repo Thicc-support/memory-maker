@@ -39,10 +39,15 @@ Preferred communication style: Simple, everyday language.
 ### Database
 - **Database**: PostgreSQL (required, referenced by `DATABASE_URL` environment variable)
 - **ORM**: Drizzle ORM with `drizzle-zod` for schema validation
-- **Schema** (`shared/schema.ts`): Three main tables:
-  - `users` — id (UUID), email, name, password hash, createdAt
-  - `drafts` — id (UUID), userId (FK), title, various story metadata fields (recipient, theme, bookType, etc.), messages (JSONB array for chat history), photos (text array), step, progress, updatedAt
-  - `books` — id (UUID), userId (FK), title, theme, style, format, status, pages (JSONB), createdAt
+- **Schema** (`shared/schema.ts`): Main tables:
+  - `users` — id (UUID), email, name, password hash, emailVerified, verificationToken, createdAt
+  - `drafts` — id (UUID), userId (FK), title, various story metadata fields (recipient, theme, bookType, etc.), messages (JSONB array for chat history), photos (text array), step, progress, interviewAnswers (JSONB), updatedAt
+  - `books` — id (UUID), userId (FK), title, recipientName, theme, style, format, status, pages (JSONB), draftId, createdAt
+  - `orders` — id (UUID), userId (FK), bookId (FK), format, status, amount (cents), stripeSessionId, stripePaymentId, shippingAddress (JSONB), createdAt
+  - `favorites` — id (UUID), userId (FK), bookId (FK), theme, style, createdAt
+  - `uploads` — id (UUID), userId (FK), filename, path, mimeType, size, createdAt
+  - `story_profiles` — id (UUID), userId (FK), name, relationship, age, personality, appearance, interests, catchphrases, favoriteThemes (text[]), storyHistory (JSONB array of past book summaries), aiNotes, createdAt, updatedAt
+  - `customer_insights` — id (UUID), userId (FK, unique), totalSpent, totalBooks, totalOrders, preferredThemes/Styles/Formats (text[]), averageBookLength, recipientAges (text[]), lastPurchaseDate, purchaseFrequency, aiSummary, behaviorLog (JSONB), updatedAt
 - **Migrations**: Use `drizzle-kit push` (`npm run db:push`) to sync schema to database
 
 ### API Routes
@@ -50,14 +55,41 @@ Preferred communication style: Simple, everyday language.
 - `POST /api/auth/login` — Log in
 - `POST /api/auth/logout` — Log out
 - `GET /api/auth/me` — Get current user
+- `POST /api/auth/change-password` — Change password (requires currentPassword, newPassword)
 - `GET /api/drafts` — List user's drafts
 - `POST /api/drafts` — Create draft
+- `GET /api/drafts/:id` — Get single draft
 - `PATCH /api/drafts/:id` — Update draft
 - `DELETE /api/drafts/:id` — Delete draft
 - `GET /api/books` — List user's books
-- `POST /api/books` — Create book
+- `GET /api/books/:id` — Get single book
+- `POST /api/books` — Create book (auto-tracks customer insights)
+- `PATCH /api/books/:id` — Update book
+- `POST /api/books/:id/regenerate-page` — Regenerate illustration for a page
+- `PATCH /api/books/:id/page/:pageIndex` — Update page text
+- `POST /api/uploads` — Upload photos (multipart, max 5 files)
+- `POST /api/generate/story` — Generate story pages from draft data
+- `POST /api/generate/illustration` — Generate single illustration
+- `POST /api/generate/book` — Generate full book (story + illustrations), accepts profileId for AI memory
+- `GET /api/orders` — List user's orders
+- `POST /api/orders` — Create order (auto-tracks customer insights)
+- `GET /api/favorites` — List favorites
+- `POST /api/favorites` — Add favorite
+- `DELETE /api/favorites/:id` — Remove favorite
+- `GET /api/story-profiles` — List user's story profiles
+- `POST /api/story-profiles` — Create story profile
+- `GET /api/story-profiles/:id` — Get single profile
+- `PATCH /api/story-profiles/:id` — Update story profile
+- `DELETE /api/story-profiles/:id` — Delete story profile
+- `GET /api/insights` — Get customer insights for current user
 
-All draft/book routes require authentication via `requireAuth` middleware.
+All routes (except auth) require authentication via `requireAuth` middleware.
+
+### AI Memory System
+- Story profiles store character details (personality, appearance, interests) and accumulate story history across books
+- When generating a book with a profileId, the AI receives the character's full profile and summaries of their previous adventures
+- The AI is instructed to reference past adventures, show character growth, and not repeat plots
+- Customer insights auto-track preferences (themes, styles, formats) and spending to personalize recommendations
 
 ### Build System
 - **Development**: `npm run dev` starts the Express server with Vite middleware for HMR

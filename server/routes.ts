@@ -118,6 +118,34 @@ export async function registerRoutes(
   app.post("/api/books", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const book = await storage.createBook({ ...req.body, userId: req.user!.id });
+
+      storage.trackBehavior(req.user!.id, "book_created", {
+        bookId: book.id, title: book.title, theme: book.theme, style: book.style,
+      }).catch(() => {});
+
+      const insights = await storage.getCustomerInsights(req.user!.id);
+      const themes = [...new Set([...(insights?.preferredThemes || []), book.theme].filter(Boolean))];
+      const styles = [...new Set([...(insights?.preferredStyles || []), book.style].filter(Boolean))];
+      storage.upsertCustomerInsights(req.user!.id, {
+        totalBooks: (insights?.totalBooks || 0) + 1,
+        preferredThemes: themes as string[],
+        preferredStyles: styles as string[],
+      }).catch(() => {});
+
+      if (req.body.profileId) {
+        const profile = await storage.getStoryProfile(req.body.profileId);
+        if (profile && profile.userId === req.user!.id) {
+          const history = [...(profile.storyHistory || []), {
+            bookId: book.id,
+            bookTitle: book.title,
+            summary: (book.pages || []).map((p: any) => p.text).join(" ").slice(0, 500),
+            themes: [book.theme].filter(Boolean) as string[],
+            createdAt: new Date().toISOString(),
+          }];
+          storage.updateStoryProfile(profile.id, { storyHistory: history }).catch(() => {});
+        }
+      }
+
       res.status(201).json(book);
     } catch (err) { next(err); }
   });
@@ -206,7 +234,7 @@ export async function registerRoutes(
 
   app.post("/api/generate/book", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { draftId, selectedStyle } = req.body;
+      const { draftId, selectedStyle, profileId } = req.body;
       let draftData = req.body;
 
       if (draftId) {
@@ -217,6 +245,35 @@ export async function registerRoutes(
         draftData = { ...draft, ...req.body };
       }
 
+      let profileContext;
+      if (profileId) {
+        const profile = await storage.getStoryProfile(profileId);
+        if (profile && profile.userId === req.user!.id) {
+          profileContext = {
+            name: profile.name,
+            relationship: profile.relationship,
+            age: profile.age || undefined,
+            personality: profile.personality || undefined,
+            appearance: profile.appearance || undefined,
+            interests: profile.interests || undefined,
+            catchphrases: profile.catchphrases || undefined,
+            storyHistory: (profile.storyHistory || []).map((h: any) => ({
+              bookTitle: h.bookTitle,
+              summary: h.summary,
+              themes: h.themes,
+            })),
+            aiNotes: profile.aiNotes || undefined,
+          };
+        }
+      }
+
+      const customerInsightsData = await storage.getCustomerInsights(req.user!.id);
+      const customerPreferences = customerInsightsData ? {
+        preferredThemes: customerInsightsData.preferredThemes as string[],
+        preferredStyles: customerInsightsData.preferredStyles as string[],
+        totalBooks: customerInsightsData.totalBooks,
+      } : undefined;
+
       const storyPages = await generateStory({
         recipientName: draftData.recipientName || "the reader",
         recipientAge: draftData.recipientAge || "5",
@@ -226,6 +283,8 @@ export async function registerRoutes(
         style: selectedStyle || draftData.selectedStyle || "whimsical",
         interviewAnswers: draftData.interviewAnswers || {},
         messages: draftData.messages || [],
+        profileContext,
+        customerPreferences,
       });
 
       const style = selectedStyle || draftData.selectedStyle || "whimsical";
@@ -265,6 +324,24 @@ export async function registerRoutes(
       if (draftId) {
         await storage.updateDraft(draftId, { step: "preview", progress: 100 });
       }
+
+      if (profileId) {
+        const profile = await storage.getStoryProfile(profileId);
+        if (profile && profile.userId === req.user!.id) {
+          const history = [...(profile.storyHistory || []), {
+            bookId: book.id,
+            bookTitle: book.title,
+            summary: pagesWithImages.map((p: any) => p.text).join(" ").slice(0, 500),
+            themes: [theme].filter(Boolean) as string[],
+            createdAt: new Date().toISOString(),
+          }];
+          storage.updateStoryProfile(profile.id, { storyHistory: history }).catch(() => {});
+        }
+      }
+
+      storage.trackBehavior(req.user!.id, "book_generated", {
+        bookId: book.id, theme, style, profileId: profileId || null, pageCount: pagesWithImages.length,
+      }).catch(() => {});
 
       res.status(201).json(book);
     } catch (err) { next(err); }
@@ -380,7 +457,76 @@ export async function registerRoutes(
         stripePaymentId: null,
       });
 
+      storage.trackBehavior(req.user!.id, "order_placed", {
+        orderId: order.id, bookId, format, amount,
+      }).catch(() => {});
+
+      const insights = await storage.getCustomerInsights(req.user!.id);
+      const formats = [...new Set([...(insights?.preferredFormats || []), format].filter(Boolean))];
+      storage.upsertCustomerInsights(req.user!.id, {
+        totalOrders: (insights?.totalOrders || 0) + 1,
+        totalSpent: (insights?.totalSpent || 0) + amount,
+        preferredFormats: formats as string[],
+        lastPurchaseDate: new Date(),
+      }).catch(() => {});
+
       res.status(201).json(order);
+    } catch (err) { next(err); }
+  });
+
+  // ========== STORY PROFILES ==========
+  app.get("/api/story-profiles", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profiles = await storage.getStoryProfilesByUser(req.user!.id);
+      res.json(profiles);
+    } catch (err) { next(err); }
+  });
+
+  app.get("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profile = await storage.getStoryProfile(req.params.id);
+      if (!profile || profile.userId !== req.user!.id) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (err) { next(err); }
+  });
+
+  app.post("/api/story-profiles", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profile = await storage.createStoryProfile({ ...req.body, userId: req.user!.id });
+      await storage.trackBehavior(req.user!.id, "profile_created", { profileId: profile.id, name: profile.name, relationship: profile.relationship });
+      res.status(201).json(profile);
+    } catch (err) { next(err); }
+  });
+
+  app.patch("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profile = await storage.getStoryProfile(req.params.id);
+      if (!profile || profile.userId !== req.user!.id) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      const updated = await storage.updateStoryProfile(req.params.id, req.body);
+      res.json(updated);
+    } catch (err) { next(err); }
+  });
+
+  app.delete("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profile = await storage.getStoryProfile(req.params.id);
+      if (!profile || profile.userId !== req.user!.id) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      await storage.deleteStoryProfile(req.params.id);
+      res.json({ message: "Deleted" });
+    } catch (err) { next(err); }
+  });
+
+  // ========== CUSTOMER INSIGHTS ==========
+  app.get("/api/insights", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const insights = await storage.getCustomerInsights(req.user!.id);
+      res.json(insights || { totalSpent: 0, totalBooks: 0, totalOrders: 0, preferredThemes: [], preferredStyles: [], preferredFormats: [] });
     } catch (err) { next(err); }
   });
 

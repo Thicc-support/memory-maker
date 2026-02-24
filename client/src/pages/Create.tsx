@@ -54,14 +54,45 @@ export default function Create() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generatedBook, setGeneratedBook] = useState<any>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [availableProfiles, setAvailableProfiles] = useState<any[]>([]);
   const { user } = useAuth();
   const searchString = useSearch();
 
   const [draftData, setDraftData] = useState<any>({});
 
   useEffect(() => {
+    if (!user) return;
+    fetch("/api/story-profiles", { credentials: "include" })
+      .then(r => r.json())
+      .then(setAvailableProfiles)
+      .catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
     const params = new URLSearchParams(searchString);
     const draftParam = params.get("draft");
+    const profileParam = params.get("profile");
+
+    if (profileParam && user) {
+      setSelectedProfileId(profileParam);
+      fetch(`/api/story-profiles/${profileParam}`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(profile => {
+          if (profile) {
+            setSelectedProfile(profile);
+            setDraftData((prev: any) => ({
+              ...prev,
+              recipientName: profile.name,
+              recipientAge: profile.age || "",
+              subject: profile.name,
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+
     if (draftParam && user) {
       setDraftId(draftParam);
       fetch(`/api/drafts/${draftParam}`, { credentials: "include" })
@@ -171,6 +202,7 @@ export default function Create() {
           interviewAnswers: draftData.interviewAnswers || {},
           messages: draftData.messages || [],
           title: draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story",
+          profileId: selectedProfileId,
         }),
         credentials: "include",
       });
@@ -267,6 +299,54 @@ export default function Create() {
               <h1 className="font-heading text-3xl font-bold mb-3" data-testid="text-style-title">Choose your book's style</h1>
               <p className="text-muted-foreground text-lg">Select a visual theme that best fits your story.</p>
             </div>
+
+            {availableProfiles.length > 0 && (
+              <div className="mb-8 bg-white p-6 rounded-2xl border border-border shadow-sm max-w-2xl mx-auto">
+                <h3 className="font-heading font-bold text-lg mb-2">Create this book for a Story Profile?</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select a profile so the AI remembers their personality and continues their story.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => { setSelectedProfileId(null); setSelectedProfile(null); }}
+                    className={cn(
+                      "px-4 py-2 rounded-full border text-sm font-medium transition-all",
+                      !selectedProfileId ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-slate-300"
+                    )}
+                    data-testid="button-no-profile"
+                  >
+                    No profile
+                  </button>
+                  {availableProfiles.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedProfileId(p.id);
+                        setSelectedProfile(p);
+                        if (!draftData.recipientName) {
+                          setDraftData((prev: any) => ({ ...prev, recipientName: p.name, subject: p.name }));
+                        }
+                      }}
+                      className={cn(
+                        "px-4 py-2 rounded-full border text-sm font-medium transition-all",
+                        selectedProfileId === p.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-slate-300"
+                      )}
+                      data-testid={`button-select-profile-${p.id}`}
+                    >
+                      {p.name} ({p.relationship})
+                      {(p.storyHistory || []).length > 0 && (
+                        <span className="ml-1 text-xs opacity-70">· {(p.storyHistory || []).length} books</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {selectedProfile && (selectedProfile.storyHistory || []).length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    The AI will reference {selectedProfile.name}'s {(selectedProfile.storyHistory || []).length} previous adventure{(selectedProfile.storyHistory || []).length !== 1 ? "s" : ""} and continue their story.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               {BOOK_STYLES.map((style) => (

@@ -138,3 +138,65 @@ export const insertUploadSchema = createInsertSchema(uploads).omit({
 
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Upload = typeof uploads.$inferSelect;
+
+export const storyProfiles = pgTable("story_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  relationship: text("relationship").notNull(),
+  age: text("age"),
+  personality: text("personality"),
+  appearance: text("appearance"),
+  interests: text("interests"),
+  catchphrases: text("catchphrases"),
+  favoriteThemes: text("favorite_themes").array().default([]),
+  storyHistory: jsonb("story_history").$type<Array<{
+    bookId: string;
+    bookTitle: string;
+    summary: string;
+    themes: string[];
+    createdAt: string;
+  }>>().default([]),
+  aiNotes: text("ai_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStoryProfileSchema = createInsertSchema(storyProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStoryProfile = z.infer<typeof insertStoryProfileSchema>;
+export type StoryProfile = typeof storyProfiles.$inferSelect;
+
+export const customerInsights = pgTable("customer_insights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
+  totalSpent: integer("total_spent").notNull().default(0),
+  totalBooks: integer("total_books").notNull().default(0),
+  totalOrders: integer("total_orders").notNull().default(0),
+  preferredThemes: text("preferred_themes").array().default([]),
+  preferredStyles: text("preferred_styles").array().default([]),
+  preferredFormats: text("preferred_formats").array().default([]),
+  averageBookLength: integer("average_book_length").default(0),
+  recipientAges: text("recipient_ages").array().default([]),
+  lastPurchaseDate: timestamp("last_purchase_date"),
+  purchaseFrequency: text("purchase_frequency"),
+  aiSummary: text("ai_summary"),
+  behaviorLog: jsonb("behavior_log").$type<Array<{
+    action: string;
+    details: Record<string, any>;
+    timestamp: string;
+  }>>().default([]),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCustomerInsightsSchema = createInsertSchema(customerInsights).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertCustomerInsights = z.infer<typeof insertCustomerInsightsSchema>;
+export type CustomerInsights = typeof customerInsights.$inferSelect;

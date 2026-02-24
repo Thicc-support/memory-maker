@@ -2,7 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Heart, Play, Trash2, Plus, ShoppingBag, Eye, Lock } from "lucide-react";
+import { BookOpen, Heart, Play, Trash2, Plus, ShoppingBag, Eye, Lock, Users, Edit, X, Save } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useEffect, useState } from "react";
@@ -43,6 +43,22 @@ interface Favorite {
   createdAt: string | null;
 }
 
+interface StoryProfile {
+  id: string;
+  name: string;
+  relationship: string;
+  age: string | null;
+  personality: string | null;
+  appearance: string | null;
+  interests: string | null;
+  catchphrases: string | null;
+  favoriteThemes: string[] | null;
+  storyHistory: Array<{ bookId: string; bookTitle: string; summary: string; themes: string[]; createdAt: string }> | null;
+  aiNotes: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export default function Profile() {
   const { user, loading } = useAuth();
   const [location, setLocation] = useLocation();
@@ -50,10 +66,14 @@ export default function Profile() {
   const [books, setBooks] = useState<Book[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [storyProfiles, setStoryProfiles] = useState<StoryProfile[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<StoryProfile | null>(null);
+  const [showNewProfile, setShowNewProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", relationship: "", age: "", personality: "", appearance: "", interests: "", catchphrases: "" });
   const { toast } = useToast();
 
   const fetchAllData = () => {
@@ -73,6 +93,10 @@ export default function Profile() {
     fetch("/api/favorites", { credentials: "include" })
       .then(r => r.json())
       .then(setFavorites)
+      .catch(() => {});
+    fetch("/api/story-profiles", { credentials: "include" })
+      .then(r => r.json())
+      .then(setStoryProfiles)
       .catch(() => {});
   };
 
@@ -133,6 +157,68 @@ export default function Profile() {
       toast({ title: "Failed to change password", variant: "destructive" });
     }
     setChangingPassword(false);
+  };
+
+  const handleCreateProfile = async () => {
+    if (!profileForm.name || !profileForm.relationship) {
+      toast({ title: "Name and relationship are required", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await fetch("/api/story-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const profile = await res.json();
+        setStoryProfiles(prev => [...prev, profile]);
+        setProfileForm({ name: "", relationship: "", age: "", personality: "", appearance: "", interests: "", catchphrases: "" });
+        setShowNewProfile(false);
+        toast({ title: `Profile for ${profile.name} created!` });
+      }
+    } catch {
+      toast({ title: "Failed to create profile", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!editingProfile) return;
+    try {
+      const res = await fetch(`/api/story-profiles/${editingProfile.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setStoryProfiles(prev => prev.map(p => p.id === updated.id ? updated : p));
+        setEditingProfile(null);
+        toast({ title: "Profile updated!" });
+      }
+    } catch {
+      toast({ title: "Failed to update profile", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteProfile = async (id: string) => {
+    await fetch(`/api/story-profiles/${id}`, { method: "DELETE", credentials: "include" });
+    setStoryProfiles(prev => prev.filter(p => p.id !== id));
+  };
+
+  const startEditProfile = (profile: StoryProfile) => {
+    setEditingProfile(profile);
+    setProfileForm({
+      name: profile.name,
+      relationship: profile.relationship,
+      age: profile.age || "",
+      personality: profile.personality || "",
+      appearance: profile.appearance || "",
+      interests: profile.interests || "",
+      catchphrases: profile.catchphrases || "",
+    });
   };
 
   if (loading) return null;
@@ -200,8 +286,9 @@ export default function Profile() {
         )}
 
         <Tabs defaultValue="books" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-4 mb-8 bg-white border border-border p-1 rounded-full mx-auto md:mx-0">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5 mb-8 bg-white border border-border p-1 rounded-full mx-auto md:mx-0">
             <TabsTrigger value="books" className="rounded-full" data-testid="tab-books">My Books</TabsTrigger>
+            <TabsTrigger value="profiles" className="rounded-full" data-testid="tab-profiles">Story Profiles</TabsTrigger>
             <TabsTrigger value="drafts" className="rounded-full" data-testid="tab-drafts">Drafts</TabsTrigger>
             <TabsTrigger value="orders" className="rounded-full" data-testid="tab-orders">Orders</TabsTrigger>
             <TabsTrigger value="favorites" className="rounded-full" data-testid="tab-favorites">Favorites</TabsTrigger>
@@ -241,6 +328,191 @@ export default function Profile() {
                         <Eye size={14} className="mr-1" /> View Book
                       </Button>
                     </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="profiles">
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h2 className="font-heading text-xl font-bold">Family & Character Profiles</h2>
+                <p className="text-sm text-muted-foreground">Create profiles for family members so the AI remembers them across books</p>
+              </div>
+              <Button className="rounded-full" onClick={() => { setShowNewProfile(true); setEditingProfile(null); setProfileForm({ name: "", relationship: "", age: "", personality: "", appearance: "", interests: "", catchphrases: "" }); }} data-testid="button-new-profile">
+                <Plus size={16} className="mr-2" /> New Profile
+              </Button>
+            </div>
+
+            {(showNewProfile || editingProfile) && (
+              <div className="bg-white p-6 rounded-2xl border border-border shadow-sm mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-heading font-bold text-lg">{editingProfile ? `Edit ${editingProfile.name}` : "Create New Profile"}</h3>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowNewProfile(false); setEditingProfile(null); }}>
+                    <X size={16} />
+                  </Button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Aunt Sally"
+                      value={profileForm.name}
+                      onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Relationship *</label>
+                    <select
+                      value={profileForm.relationship}
+                      onChange={e => setProfileForm(f => ({ ...f, relationship: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                      data-testid="input-profile-relationship"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Mom">Mom</option>
+                      <option value="Dad">Dad</option>
+                      <option value="Grandma">Grandma</option>
+                      <option value="Grandpa">Grandpa</option>
+                      <option value="Aunt">Aunt</option>
+                      <option value="Uncle">Uncle</option>
+                      <option value="Sister">Sister</option>
+                      <option value="Brother">Brother</option>
+                      <option value="Cousin">Cousin</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Pet">Pet</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Age</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 45"
+                      value={profileForm.age}
+                      onChange={e => setProfileForm(f => ({ ...f, age: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-age"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Personality</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Funny, adventurous, loves puns"
+                      value={profileForm.personality}
+                      onChange={e => setProfileForm(f => ({ ...f, personality: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-personality"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Appearance</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Brown hair, blue eyes, tall, always wears a red hat"
+                      value={profileForm.appearance}
+                      onChange={e => setProfileForm(f => ({ ...f, appearance: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-appearance"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Interests & Hobbies</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Gardening, cooking Italian food, hiking"
+                      value={profileForm.interests}
+                      onChange={e => setProfileForm(f => ({ ...f, interests: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-interests"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium mb-1 block">Catchphrases or Things They Say</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 'Holy moly!', 'Let's go on an adventure!'"
+                      value={profileForm.catchphrases}
+                      onChange={e => setProfileForm(f => ({ ...f, catchphrases: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      data-testid="input-profile-catchphrases"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={editingProfile ? handleUpdateProfile : handleCreateProfile} data-testid="button-save-profile">
+                    <Save size={14} className="mr-2" /> {editingProfile ? "Save Changes" : "Create Profile"}
+                  </Button>
+                  <Button variant="ghost" onClick={() => { setShowNewProfile(false); setEditingProfile(null); }}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {storyProfiles.length === 0 && !showNewProfile ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-border">
+                <Users size={48} className="text-muted-foreground mb-4 opacity-50" />
+                <h3 className="font-heading text-xl font-bold mb-2">No story profiles yet</h3>
+                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                  Create profiles for family members and characters. The AI will remember their personality,
+                  appearance, and past adventures to write better, more personal stories each time.
+                </p>
+                <Button className="rounded-full" onClick={() => setShowNewProfile(true)} data-testid="button-create-first-profile">
+                  <Plus size={16} className="mr-2" /> Create Your First Profile
+                </Button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {storyProfiles.map(profile => (
+                  <div key={profile.id} className="bg-white p-6 rounded-2xl border border-border shadow-sm" data-testid={`card-profile-${profile.id}`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                        {profile.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-heading font-bold text-lg">{profile.name}</h3>
+                        <p className="text-sm text-muted-foreground">{profile.relationship}{profile.age ? ` · Age ${profile.age}` : ""}</p>
+                      </div>
+                    </div>
+
+                    {profile.personality && (
+                      <p className="text-sm mb-2"><span className="font-medium">Personality:</span> {profile.personality}</p>
+                    )}
+                    {profile.appearance && (
+                      <p className="text-sm mb-2"><span className="font-medium">Looks:</span> {profile.appearance}</p>
+                    )}
+                    {profile.interests && (
+                      <p className="text-sm mb-2"><span className="font-medium">Interests:</span> {profile.interests}</p>
+                    )}
+
+                    {(profile.storyHistory || []).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          {(profile.storyHistory || []).length} book{(profile.storyHistory || []).length !== 1 ? "s" : ""} starring {profile.name}
+                        </p>
+                        {(profile.storyHistory || []).slice(-2).map((h, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">"{h.bookTitle}"</p>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 mt-4">
+                      <Link href={`/create?profile=${profile.id}`}>
+                        <Button size="sm" className="rounded-full text-xs" data-testid={`button-create-for-${profile.id}`}>
+                          <BookOpen size={12} className="mr-1" /> New Book
+                        </Button>
+                      </Link>
+                      <Button size="sm" variant="outline" className="rounded-full text-xs" onClick={() => startEditProfile(profile)} data-testid={`button-edit-profile-${profile.id}`}>
+                        <Edit size={12} className="mr-1" /> Edit
+                      </Button>
+                      <Button size="sm" variant="ghost" className="rounded-full text-xs text-muted-foreground hover:text-destructive" onClick={() => handleDeleteProfile(profile.id)} data-testid={`button-delete-profile-${profile.id}`}>
+                        <Trash2 size={12} />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

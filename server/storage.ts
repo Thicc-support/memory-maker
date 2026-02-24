@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Draft, type InsertDraft, type Book, type InsertBook, type Order, type InsertOrder, type Favorite, type InsertFavorite, type Upload, type InsertUpload, users, drafts, books, orders, favorites, uploads } from "@shared/schema";
+import { type User, type InsertUser, type Draft, type InsertDraft, type Book, type InsertBook, type Order, type InsertOrder, type Favorite, type InsertFavorite, type Upload, type InsertUpload, type StoryProfile, type InsertStoryProfile, type CustomerInsights, type InsertCustomerInsights, users, drafts, books, orders, favorites, uploads, storyProfiles, customerInsights } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -32,6 +32,16 @@ export interface IStorage {
 
   createUpload(upload: InsertUpload): Promise<Upload>;
   getUploadsByUser(userId: string): Promise<Upload[]>;
+
+  getStoryProfilesByUser(userId: string): Promise<StoryProfile[]>;
+  getStoryProfile(id: string): Promise<StoryProfile | undefined>;
+  createStoryProfile(profile: InsertStoryProfile): Promise<StoryProfile>;
+  updateStoryProfile(id: string, data: Partial<InsertStoryProfile>): Promise<StoryProfile | undefined>;
+  deleteStoryProfile(id: string): Promise<void>;
+
+  getCustomerInsights(userId: string): Promise<CustomerInsights | undefined>;
+  upsertCustomerInsights(userId: string, data: Partial<InsertCustomerInsights>): Promise<CustomerInsights>;
+  trackBehavior(userId: string, action: string, details: Record<string, any>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -150,6 +160,55 @@ export class DatabaseStorage implements IStorage {
 
   async getUploadsByUser(userId: string): Promise<Upload[]> {
     return db.select().from(uploads).where(eq(uploads.userId, userId));
+  }
+
+  async getStoryProfilesByUser(userId: string): Promise<StoryProfile[]> {
+    return db.select().from(storyProfiles).where(eq(storyProfiles.userId, userId));
+  }
+
+  async getStoryProfile(id: string): Promise<StoryProfile | undefined> {
+    const [profile] = await db.select().from(storyProfiles).where(eq(storyProfiles.id, id));
+    return profile;
+  }
+
+  async createStoryProfile(profile: InsertStoryProfile): Promise<StoryProfile> {
+    const [created] = await db.insert(storyProfiles).values(profile).returning();
+    return created;
+  }
+
+  async updateStoryProfile(id: string, data: Partial<InsertStoryProfile>): Promise<StoryProfile | undefined> {
+    const [updated] = await db.update(storyProfiles).set({ ...data, updatedAt: new Date() }).where(eq(storyProfiles.id, id)).returning();
+    return updated;
+  }
+
+  async deleteStoryProfile(id: string): Promise<void> {
+    await db.delete(storyProfiles).where(eq(storyProfiles.id, id));
+  }
+
+  async getCustomerInsights(userId: string): Promise<CustomerInsights | undefined> {
+    const [insights] = await db.select().from(customerInsights).where(eq(customerInsights.userId, userId));
+    return insights;
+  }
+
+  async upsertCustomerInsights(userId: string, data: Partial<InsertCustomerInsights>): Promise<CustomerInsights> {
+    const existing = await this.getCustomerInsights(userId);
+    if (existing) {
+      const [updated] = await db.update(customerInsights).set({ ...data, updatedAt: new Date() }).where(eq(customerInsights.userId, userId)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(customerInsights).values({ userId, ...data }).returning();
+    return created;
+  }
+
+  async trackBehavior(userId: string, action: string, details: Record<string, any>): Promise<void> {
+    const existing = await this.getCustomerInsights(userId);
+    const newEntry = { action, details, timestamp: new Date().toISOString() };
+    if (existing) {
+      const log = [...(existing.behaviorLog || []), newEntry].slice(-100);
+      await db.update(customerInsights).set({ behaviorLog: log, updatedAt: new Date() }).where(eq(customerInsights.userId, userId));
+    } else {
+      await db.insert(customerInsights).values({ userId, behaviorLog: [newEntry] });
+    }
   }
 }
 

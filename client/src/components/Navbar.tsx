@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { BookOpen, User, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AuthModal } from "./AuthModal";
+import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,20 +15,11 @@ import {
 
 export function Navbar() {
   const [showAuth, setShowAuth] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    // Check mock auth
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     setLocation("/");
   };
 
@@ -36,10 +28,7 @@ export function Navbar() {
       <AuthModal 
         isOpen={showAuth} 
         onOpenChange={setShowAuth} 
-        onLoginSuccess={() => {
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) setUser(JSON.parse(storedUser));
-        }} 
+        onLoginSuccess={() => {}} 
       />
       
       <nav className="w-full py-6 px-6 md:px-12 flex justify-between items-center bg-transparent relative z-10">
@@ -67,7 +56,7 @@ export function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="rounded-full px-4 border border-border hover:bg-white/50">
+                <Button variant="ghost" className="rounded-full px-4 border border-border hover:bg-white/50" data-testid="button-user-menu">
                   <User size={18} className="mr-2" />
                   <span className="max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
                 </Button>
@@ -79,26 +68,26 @@ export function Navbar() {
                   Account
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                  Draft
+                  Drafts
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                  Past Orders
+                  My Books
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive" data-testid="button-logout">
                   <LogOut size={16} className="mr-2" />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" onClick={() => setShowAuth(true)} className="rounded-full hover:bg-white/50 text-muted-foreground hover:text-primary">
+            <Button variant="ghost" onClick={() => setShowAuth(true)} className="rounded-full hover:bg-white/50 text-muted-foreground hover:text-primary" data-testid="button-create-account">
               Create Account
             </Button>
           )}
 
           <Link href="/create">
-            <Button className="rounded-full px-6 font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5">
+            <Button className="rounded-full px-6 font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5" data-testid="button-create-book">
               Create a Book
             </Button>
           </Link>

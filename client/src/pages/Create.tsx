@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ChatInterface } from "@/components/ChatInterface";
 import { BookPreview } from "@/components/BookPreview";
@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Save, CheckCircle, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 
 const BOOK_STYLES = [
   {
@@ -44,42 +45,63 @@ const BOOK_STYLES = [
 export default function Create() {
   const [step, setStep] = useState<"chat" | "style" | "generating" | "preview">("chat");
   const [showAuth, setShowAuth] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const { user } = useAuth();
   
-  // Draft Data State (Managed by ChatInterface now)
   const [draftData, setDraftData] = useState<any>({});
 
   useEffect(() => {
-    // Check auth status mock
-    const user = localStorage.getItem("user");
-    if (user) setIsAuthenticated(true);
-  }, []);
-
-  // Auto-Save Logic
-  useEffect(() => {
-    if (!isAuthenticated || Object.keys(draftData).length === 0) return;
+    if (!user || Object.keys(draftData).length === 0) return;
 
     const saveData = async () => {
       setIsSaving(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const currentData = {
-        ...draftData,
-        selectedStyle,
-        updatedAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem("currentDraft", JSON.stringify(currentData));
-      setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      setIsSaving(false);
+      try {
+        const body = {
+          title: draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story",
+          recipient: draftData.recipient,
+          recipientRelationship: draftData.recipientRelationship,
+          subject: draftData.subject,
+          theme: draftData.theme,
+          bookType: draftData.bookType,
+          bookLength: draftData.bookLength,
+          recipientName: draftData.recipientName,
+          recipientAge: draftData.recipientAge,
+          selectedStyle,
+          step,
+          progress: step === "chat" ? 30 : step === "style" ? 60 : 90,
+        };
+
+        if (draftId) {
+          await fetch(`/api/drafts/${draftId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            credentials: "include",
+          });
+        } else {
+          const res = await fetch("/api/drafts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            credentials: "include",
+          });
+          const created = await res.json();
+          setDraftId(created.id);
+        }
+        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (err) {
+        console.error("Save failed:", err);
+      } finally {
+        setIsSaving(false);
+      }
     };
 
     const timer = setTimeout(saveData, 2000);
     return () => clearTimeout(timer);
-  }, [draftData, isAuthenticated, selectedStyle]);
+  }, [draftData, user, selectedStyle, step]);
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -87,12 +109,12 @@ export default function Create() {
       <AuthModal 
         isOpen={showAuth} 
         onOpenChange={setShowAuth} 
-        onLoginSuccess={() => setIsAuthenticated(true)} 
+        onLoginSuccess={() => {}} 
       />
       
       {/* Auto-Save Indicator */}
       <AnimatePresence>
-        {isAuthenticated && (step === "chat" || step === "style") && (
+        {user && (step === "chat" || step === "style") && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

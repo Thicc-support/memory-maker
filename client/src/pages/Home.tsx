@@ -7,6 +7,7 @@ import { BookPreviewModal } from "@/components/BookPreviewModal";
 import { Testimonials } from "@/components/Testimonials";
 import { FAQ } from "@/components/FAQ";
 import { PricingSection } from "@/components/PricingSection";
+import { Footer } from "@/components/Footer";
 
 const EXAMPLE_BOOKS = [
   {
@@ -214,11 +215,7 @@ export default function Home() {
         book={selectedBook}
       />
 
-      <footer className="py-12 border-t border-border bg-white/50">
-        <div className="container mx-auto px-6 text-center text-muted-foreground">
-          <p>&copy; 2024 TaleWeaver. Making memories magical.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

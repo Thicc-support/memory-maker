@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { generateStory, generateIllustration } from "./ai";
+import { registerStripeRoutes } from "./stripe";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -40,6 +41,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   setupAuth(app);
+  registerStripeRoutes(app);
 
   app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
     const filePath = path.join(uploadDir, path.basename(req.path));

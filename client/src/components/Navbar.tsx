@@ -45,7 +45,7 @@ export function Navbar() {
           <Link href="/" className="hover:text-primary transition-colors no-underline">Home</Link>
           <a href="/#how-it-works" className="hover:text-primary transition-colors">How it Works</a>
           <a href="/#examples" className="hover:text-primary transition-colors">Examples</a>
-          <a href="/#pricing" className="hover:text-primary transition-colors">Pricing</a>
+          <Link href="/pricing" className="hover:text-primary transition-colors no-underline" data-testid="link-nav-pricing">Pricing</Link>
         </div>
 
         <div className="flex gap-4 items-center">

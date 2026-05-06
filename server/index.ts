@@ -12,13 +12,16 @@ declare module "http" {
   }
 }
 
-app.use(
-  express.json({
-    verify: (req, _res, buf) => {
-      req.rawBody = buf;
-    },
-  }),
-);
+const jsonParser = express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+});
+
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/webhooks/stripe") return next();
+  return jsonParser(req, res, next);
+});
 
 app.use(express.urlencoded({ extended: false }));
 

@@ -1,0 +1,13 @@
+I need this app market-ready to start selling to real customers. Here is what needs to be done in this session - focus on these critical items:
+
+1. STRIPE PAYMENT INTEGRATION: Install the stripe npm package. Create a full Stripe Checkout integration. Add routes: POST /api/checkout/create-session (creates Stripe checkout session for a book order, uses STRIPE_SECRET_KEY env var), POST /api/webhooks/stripe (handles checkout.session.completed webhook to update order status and payment IDs). The frontend should redirect to Stripe Checkout after user clicks "Order" on their completed book. After payment success, redirect back to an order confirmation page. Use env vars STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY (I will add these to Secrets myself later).
+
+2. REAL PRICING PAGE: Update the /pricing route with 3 real tiers: Free (1 digital preview book, no download), Storyteller ($14.99/month subscription via Stripe, 1 free book per month + 20% off extra books + all digital downloads), and Family Bundle ($29.99/month, 3 free books per month + 30% off extras + priority generation + all formats). Individual book pricing: Digital PDF $9.99, Softcover $24.99, Hardcover $34.99. Build the subscription management with Stripe (create subscription, cancel, manage billing portal).
+
+3. LEGAL PAGES: Add /terms, /privacy, and /refund routes with real legal page content appropriate for an AI-generated children's book business. Include data collection disclosures, AI-generated content disclaimers, refund policy (digital books non-refundable, physical books refundable within 30 days if defective), and COPPA compliance since this involves children's content.
+
+4. REMOVE FAKE SOCIAL PROOF: Change "Loved by 10,000+ families" on the homepage to something honest like "Start creating your family's story today" or similar. Do not claim users or reviews that do not exist.
+
+5. FOOTER: Add a proper site footer with links to Terms, Privacy, Refund Policy, a contact email (support@taleweaver.com), and copyright notice.
+
+Do all 5 tasks. Make sure everything compiles, the app runs, and test it.

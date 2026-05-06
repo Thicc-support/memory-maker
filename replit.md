@@ -82,8 +82,16 @@ Preferred communication style: Simple, everyday language.
 - `PATCH /api/story-profiles/:id` — Update story profile
 - `DELETE /api/story-profiles/:id` — Delete story profile
 - `GET /api/insights` — Get customer insights for current user
+- `POST /api/checkout/create-session` — Stripe Checkout for book order; returns `{ url }`
+- `POST /api/checkout/create-subscription` — Stripe Checkout for subscription (`tier: storyteller | family`)
+- `POST /api/checkout/portal` — Stripe Billing Portal session
+- `POST /api/webhooks/stripe` — Stripe webhook (raw body); handles `checkout.session.completed` and subscription updates
+- `GET /api/orders/:id` — Get single order (used by /order/success page)
 
-All routes (except auth) require authentication via `requireAuth` middleware.
+All routes (except auth and webhook) require authentication via `requireAuth` middleware.
+
+### Pages
+- `/` Home, `/create`, `/profile`, `/book/:id`, `/pricing`, `/terms`, `/privacy`, `/refund`, `/order/success`
 
 ### AI Memory System
 - Story profiles store character details (personality, appearance, interests) and accumulate story history across books
@@ -110,6 +118,9 @@ All routes (except auth) require authentication via `requireAuth` middleware.
 ### Environment Variables
 - `DATABASE_URL` — PostgreSQL connection string (required)
 - `SESSION_SECRET` — Secret for session encryption (falls back to a dev default)
+- `STRIPE_SECRET_KEY` — Stripe API secret key (required for payments)
+- `STRIPE_PUBLISHABLE_KEY` — Stripe publishable key (frontend, not currently used; Checkout is server-redirected)
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret (required; webhook fails closed without it)
 
 ### Key NPM Dependencies
 - **Frontend**: React, Wouter, TanStack React Query, Framer Motion, shadcn/ui (Radix UI), Tailwind CSS, embla-carousel-react, react-day-picker, recharts, vaul (drawer)

@@ -85,20 +85,23 @@ export function BookPreview({ bookId, title = "Your Story", pages: initialPages,
     setOrdering(true);
 
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/checkout/create-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId, format }),
         credentials: "include",
       });
-      if (res.ok) {
-        toast({ title: "Order placed!", description: format === "digital" ? "Your download will be ready shortly." : "Your book will ship in 5-7 business days." });
-        onOrder?.(format);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Checkout failed");
+      if (data.url) {
+        window.location.href = data.url;
+        return;
       }
-    } catch (err) {
-      toast({ title: "Order failed", variant: "destructive" });
+      onOrder?.(format);
+    } catch (err: any) {
+      toast({ title: "Checkout failed", description: err.message, variant: "destructive" });
+      setOrdering(false);
     }
-    setOrdering(false);
   };
 
   return (

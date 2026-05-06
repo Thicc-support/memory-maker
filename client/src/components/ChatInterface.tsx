@@ -185,7 +185,7 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
   const steps = {
     askRecipientDetail: () => {
       addMessage({
-        id: "q-recipient-detail", role: "assistant", content: "How special! Who is the recipient?", type: "recipient-detail-select"
+        id: "q-recipient-detail", role: "assistant", content: "How special! What's your relationship to this child?", type: "recipient-detail-select"
       });
     },
     askSubject: () => {

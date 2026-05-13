@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "v5ziWhq_lc42TUrZbJ6_s"
+uri = "file://VISION.md"
+type = "text"
+title = "TaleWeaver — Vision & Handoff Document"

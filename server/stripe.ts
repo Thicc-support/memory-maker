@@ -3,6 +3,12 @@ import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { storage } from "./storage";
 
+
+function routeParam(req: Request, name: string): string {
+  const value = req.params[name];
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 export const stripe = stripeKey ? new Stripe(stripeKey) : null;
 
@@ -296,7 +302,7 @@ export function registerStripeRoutes(app: Express) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const order = await storage.getOrder(req.params.id);
+        const order = await storage.getOrder(routeParam(req, "id"));
         if (!order || order.userId !== (req.user as any).id) {
           return res.status(404).json({ message: "Order not found" });
         }

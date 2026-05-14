@@ -1,9 +1,23 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+const storyProvider = (process.env.STORY_PROVIDER || "openai").toLowerCase();
+const anthropicModel = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest";
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
+
+const imageProvider = (process.env.IMAGE_PROVIDER || "openai").toLowerCase();
+const geminiImageModel = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview";
+const gemini = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
 
 interface StoryProfileContext {
   name: string;
@@ -38,7 +52,7 @@ interface StoryInput {
   };
 }
 
-export async function generateStory(input: StoryInput): Promise<Array<{ text: string; pageNumber: number }>> {
+function buildStoryPrompt(input: StoryInput): string {
   const interviewContext = Object.entries(input.interviewAnswers || {})
     .map(([q, a]) => `Q: ${q}\nA: ${a}`)
     .join("\n\n");
@@ -75,7 +89,7 @@ ${p.aiNotes ? `- Additional notes: ${p.aiNotes}` : ""}`;
     preferencesSection = `\n\nCUSTOMER CONTEXT: This customer has created ${input.customerPreferences.totalBooks} book(s) before. They enjoy themes like: ${(input.customerPreferences.preferredThemes || []).join(", ") || "various"}.`;
   }
 
-  const prompt = `You are a children's book author creating a personalized story. Write a children's book with EXACTLY 8 pages.
+  return `You are a warm children's book author creating a personalized keepsake story. Write a children's book with EXACTLY 8 pages.
 
 Details:
 - Recipient name: ${input.recipientName || "the reader"}
@@ -102,15 +116,9 @@ Instructions:
 
 Return ONLY a JSON array with 8 objects, each having "text" and "pageNumber" fields.
 Example: [{"text": "Once upon a time...", "pageNumber": 1}, ...]`;
+}
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.8,
-    max_tokens: 2000,
-  });
-
-  const content = response.choices[0]?.message?.content || "[]";
+function normalizeStoryPages(content: string): Array<{ text: string; pageNumber: number }> {
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
     throw new Error("Failed to parse story response");
@@ -126,38 +134,74 @@ Example: [{"text": "Once upon a time...", "pageNumber": 1}, ...]`;
 
   while (pages.length < 8) {
     pages.push({
-      text: `And so the adventure continued, with more wonderful memories to be made...`,
+      text: "And so the adventure continued, with more wonderful memories to be made...",
       pageNumber: pages.length + 1,
     });
   }
 
-  pages = pages.slice(0, 10).map((p: any, i: number) => ({
+  return pages.slice(0, 8).map((p: any, i: number) => ({
     text: p.text,
     pageNumber: i + 1,
   }));
-
-  return pages;
 }
 
-export async function generateIllustration(
+async function generateAnthropicStory(prompt: string): Promise<string> {
+  if (!anthropic) {
+    throw new Error("ANTHROPIC_API_KEY is required when STORY_PROVIDER is anthropic.");
+  }
+
+  const response = await anthropic.messages.create({
+    model: anthropicModel,
+    max_tokens: 2200,
+    temperature: 0.8,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.content
+    .map((block) => (block.type === "text" ? block.text : ""))
+    .join("\n")
+    .trim();
+}
+
+async function generateOpenAIStory(prompt: string): Promise<string> {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.8,
+    max_tokens: 2000,
+  });
+
+  return response.choices[0]?.message?.content || "[]";
+}
+
+export async function generateStory(input: StoryInput): Promise<Array<{ text: string; pageNumber: number }>> {
+  const prompt = buildStoryPrompt(input);
+  const content = storyProvider === "anthropic"
+    ? await generateAnthropicStory(prompt)
+    : await generateOpenAIStory(prompt);
+
+  return normalizeStoryPages(content);
+}
+
+function buildIllustrationPrompt(
   pageText: string,
   style: string,
   recipientName: string,
   theme: string,
   pageNumber: number,
   totalPages: number
-): Promise<string> {
+): string {
   const stylePrompts: Record<string, string> = {
-    classic: "elegant traditional storybook illustration, warm oil painting style, rich colors, detailed backgrounds, classic children's book art like Beatrix Potter",
-    whimsical: "bright colorful cartoon illustration, playful and fun, bold outlines, vibrant colors, cute characters, Pixar-inspired children's book style",
-    modern: "clean modern digital illustration, minimalist design, flat colors with subtle gradients, geometric shapes, contemporary children's book art",
-    fantasy: "magical fantasy illustration, dramatic lighting, sparkles and glowing effects, enchanted atmosphere, detailed fantasy art for children",
-    family: "warm watercolor illustration, soft pastel tones, cozy family scenes, nostalgic scrapbook feel, gentle and heartfelt children's book art",
+    classic: "elegant traditional storybook illustration, loose watercolor and ink, warm colors, detailed backgrounds, classic children's book art",
+    whimsical: "bright colorful storybook illustration, loose watercolor and ink, playful and fun, vibrant colors, cute characters",
+    modern: "clean modern children's book illustration, soft textured paper, simple shapes, warm premium keepsake feeling",
+    fantasy: "magical fantasy children's book illustration, loose watercolor and ink, gentle glow, enchanted atmosphere, family-safe",
+    family: "warm watercolor and ink illustration, soft pastel tones, cozy family scenes, nostalgic keepsake feeling, textured paper",
   };
 
   const styleDesc = stylePrompts[style] || stylePrompts.whimsical;
 
-  const prompt = `Create a children's book illustration for page ${pageNumber} of ${totalPages}.
+  return `Create a premium children's keepsake book illustration for page ${pageNumber} of ${totalPages}.
 
 Story text for this page: "${pageText}"
 
@@ -168,11 +212,15 @@ Art style: ${styleDesc}
 
 Requirements:
 - Full page illustration suitable for a children's book
-- No text or words in the image
-- Bright, engaging, age-appropriate imagery
+- No text, captions, logos, watermarks, or written words in the image
+- Warm storybook feeling with textured paper
+- Family-safe and age-appropriate
 - Consistent character design
-- Rich detailed background matching the scene described`;
+- Rich detailed background matching the scene described
+- Avoid horror, weapons, generic anime, and overly glossy 3D/Pixar style`;
+}
 
+async function generateOpenAIIllustration(prompt: string): Promise<string> {
   const response = await openai.images.generate({
     model: "gpt-image-1",
     prompt,
@@ -194,4 +242,76 @@ Requirements:
   }
 
   throw new Error("No image data returned");
+}
+
+async function generateGeminiIllustration(prompt: string): Promise<string> {
+  if (!gemini) {
+    throw new Error("GEMINI_API_KEY is required when IMAGE_PROVIDER is google.");
+  }
+
+  const response = await gemini.models.generateContent({
+    model: geminiImageModel,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+    config: {
+      responseModalities: ["TEXT", "IMAGE"],
+    } as any,
+  });
+
+  const image = extractGeminiImage(response);
+  if (!image) {
+    throw new Error("Gemini Nano Banana did not return image data");
+  }
+
+  return `data:${image.mimeType};base64,${image.base64}`;
+}
+
+function extractGeminiImage(response: unknown): { mimeType: string; base64: string } | null {
+  if (!response || typeof response !== "object") return null;
+  const candidates = (response as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates)) return null;
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const content = (candidate as { content?: unknown }).content;
+    if (!content || typeof content !== "object") continue;
+    const parts = (content as { parts?: unknown }).parts;
+    if (!Array.isArray(parts)) continue;
+
+    for (const part of parts) {
+      if (!part || typeof part !== "object") continue;
+      const inlineData = (part as { inlineData?: unknown }).inlineData;
+      if (!inlineData || typeof inlineData !== "object") continue;
+      const data = (inlineData as { data?: unknown }).data;
+      if (typeof data !== "string" || data.length === 0) continue;
+      const mimeType = (inlineData as { mimeType?: unknown }).mimeType;
+      return {
+        mimeType: typeof mimeType === "string" ? mimeType : "image/png",
+        base64: data,
+      };
+    }
+  }
+
+  return null;
+}
+
+export async function generateIllustration(
+  pageText: string,
+  style: string,
+  recipientName: string,
+  theme: string,
+  pageNumber: number,
+  totalPages: number
+): Promise<string> {
+  const prompt = buildIllustrationPrompt(pageText, style, recipientName, theme, pageNumber, totalPages);
+
+  if (imageProvider === "google" || imageProvider === "gemini") {
+    return generateGeminiIllustration(prompt);
+  }
+
+  return generateOpenAIIllustration(prompt);
 }

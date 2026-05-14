@@ -9,6 +9,12 @@ import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
 
+
+function routeParam(req: Request, name: string): string {
+  const value = req.params[name];
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -62,7 +68,7 @@ export async function registerRoutes(
 
   app.get("/api/drafts/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const draft = await storage.getDraft(req.params.id);
+      const draft = await storage.getDraft(routeParam(req, "id"));
       if (!draft || draft.userId !== req.user!.id) {
         return res.status(404).json({ message: "Draft not found" });
       }
@@ -79,22 +85,22 @@ export async function registerRoutes(
 
   app.patch("/api/drafts/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const draft = await storage.getDraft(req.params.id);
+      const draft = await storage.getDraft(routeParam(req, "id"));
       if (!draft || draft.userId !== req.user!.id) {
         return res.status(404).json({ message: "Draft not found" });
       }
-      const updated = await storage.updateDraft(req.params.id, req.body);
+      const updated = await storage.updateDraft(routeParam(req, "id"), req.body);
       res.json(updated);
     } catch (err) { next(err); }
   });
 
   app.delete("/api/drafts/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const draft = await storage.getDraft(req.params.id);
+      const draft = await storage.getDraft(routeParam(req, "id"));
       if (!draft || draft.userId !== req.user!.id) {
         return res.status(404).json({ message: "Draft not found" });
       }
-      await storage.deleteDraft(req.params.id);
+      await storage.deleteDraft(routeParam(req, "id"));
       res.json({ message: "Deleted" });
     } catch (err) { next(err); }
   });
@@ -109,7 +115,7 @@ export async function registerRoutes(
 
   app.get("/api/books/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const book = await storage.getBook(req.params.id);
+      const book = await storage.getBook(routeParam(req, "id"));
       if (!book || book.userId !== req.user!.id) {
         return res.status(404).json({ message: "Book not found" });
       }
@@ -154,11 +160,11 @@ export async function registerRoutes(
 
   app.patch("/api/books/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const book = await storage.getBook(req.params.id);
+      const book = await storage.getBook(routeParam(req, "id"));
       if (!book || book.userId !== req.user!.id) {
         return res.status(404).json({ message: "Book not found" });
       }
-      const updated = await storage.updateBook(req.params.id, req.body);
+      const updated = await storage.updateBook(routeParam(req, "id"), req.body);
       res.json(updated);
     } catch (err) { next(err); }
   });
@@ -352,7 +358,7 @@ export async function registerRoutes(
   // ========== REGENERATE A SINGLE PAGE ==========
   app.post("/api/books/:id/regenerate-page", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const book = await storage.getBook(req.params.id);
+      const book = await storage.getBook(routeParam(req, "id"));
       if (!book || book.userId !== req.user!.id) {
         return res.status(404).json({ message: "Book not found" });
       }
@@ -376,7 +382,7 @@ export async function registerRoutes(
 
       pages[pageIndex] = { text, image: imageUrl };
 
-      const updated = await storage.updateBook(req.params.id, { pages });
+      const updated = await storage.updateBook(routeParam(req, "id"), { pages });
       res.json(updated);
     } catch (err) { next(err); }
   });
@@ -384,12 +390,12 @@ export async function registerRoutes(
   // ========== UPDATE PAGE TEXT ==========
   app.patch("/api/books/:id/page/:pageIndex", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const book = await storage.getBook(req.params.id);
+      const book = await storage.getBook(routeParam(req, "id"));
       if (!book || book.userId !== req.user!.id) {
         return res.status(404).json({ message: "Book not found" });
       }
 
-      const pageIndex = parseInt(req.params.pageIndex);
+      const pageIndex = parseInt(routeParam(req, "pageIndex"));
       const { text } = req.body;
       const pages = [...(book.pages || [])];
 
@@ -398,7 +404,7 @@ export async function registerRoutes(
       }
 
       pages[pageIndex] = { ...pages[pageIndex], text };
-      const updated = await storage.updateBook(req.params.id, { pages });
+      const updated = await storage.updateBook(routeParam(req, "id"), { pages });
       res.json(updated);
     } catch (err) { next(err); }
   });
@@ -425,7 +431,7 @@ export async function registerRoutes(
 
   app.delete("/api/favorites/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await storage.deleteFavorite(req.params.id);
+      await storage.deleteFavorite(routeParam(req, "id"));
       res.json({ message: "Removed" });
     } catch (err) { next(err); }
   });
@@ -486,7 +492,7 @@ export async function registerRoutes(
 
   app.get("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const profile = await storage.getStoryProfile(req.params.id);
+      const profile = await storage.getStoryProfile(routeParam(req, "id"));
       if (!profile || profile.userId !== req.user!.id) {
         return res.status(404).json({ message: "Profile not found" });
       }
@@ -504,22 +510,22 @@ export async function registerRoutes(
 
   app.patch("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const profile = await storage.getStoryProfile(req.params.id);
+      const profile = await storage.getStoryProfile(routeParam(req, "id"));
       if (!profile || profile.userId !== req.user!.id) {
         return res.status(404).json({ message: "Profile not found" });
       }
-      const updated = await storage.updateStoryProfile(req.params.id, req.body);
+      const updated = await storage.updateStoryProfile(routeParam(req, "id"), req.body);
       res.json(updated);
     } catch (err) { next(err); }
   });
 
   app.delete("/api/story-profiles/:id", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const profile = await storage.getStoryProfile(req.params.id);
+      const profile = await storage.getStoryProfile(routeParam(req, "id"));
       if (!profile || profile.userId !== req.user!.id) {
         return res.status(404).json({ message: "Profile not found" });
       }
-      await storage.deleteStoryProfile(req.params.id);
+      await storage.deleteStoryProfile(routeParam(req, "id"));
       res.json({ message: "Deleted" });
     } catch (err) { next(err); }
   });

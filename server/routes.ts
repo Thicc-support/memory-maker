@@ -208,11 +208,13 @@ export async function registerRoutes(
       }
 
       const pages = await generateStory({
+        title: draftData.title || `Book for ${draftData.recipientName || "the reader"}`,
         recipientName: draftData.recipientName || "the reader",
         recipientAge: draftData.recipientAge || "5",
         theme: draftData.theme || "Adventure",
         subject: draftData.subject || draftData.recipientName || "a brave child",
         bookType: draftData.bookType || "Story Book",
+        bookLength: draftData.bookLength || "Standard Story",
         style: draftData.selectedStyle || "whimsical",
         interviewAnswers: draftData.interviewAnswers || {},
         messages: draftData.messages || [],
@@ -283,11 +285,13 @@ export async function registerRoutes(
       } : undefined;
 
       const storyPages = await generateStory({
+        title: draftData.title || `Book for ${draftData.recipientName || "the reader"}`,
         recipientName: draftData.recipientName || "the reader",
         recipientAge: draftData.recipientAge || "5",
         theme: draftData.theme || "Adventure",
         subject: draftData.subject || draftData.recipientName || "a brave child",
         bookType: draftData.bookType || "Story Book",
+        bookLength: draftData.bookLength || "Standard Story",
         style: selectedStyle || draftData.selectedStyle || "whimsical",
         interviewAnswers: draftData.interviewAnswers || {},
         messages: draftData.messages || [],
@@ -448,12 +452,12 @@ export async function registerRoutes(
     try {
       const { bookId, format, shippingAddress } = req.body;
       const prices: Record<string, number> = {
-        digital: 1499,
-        softcover: 2999,
-        hardcover: 3999,
+        digital: 1999,
+        softcover: 3999,
+        hardcover: 5999,
       };
 
-      const amount = prices[format] || 1499;
+      const amount = prices[format] || 1999;
       const order = await storage.createOrder({
         userId: req.user!.id,
         bookId,

@@ -9,18 +9,28 @@ export default function OrderSuccess() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const orderId = params.get("order_id");
+  const sessionId = params.get("session_id");
   const isSubscription = params.get("subscription") === "true";
   const tier = params.get("tier");
 
   const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
+    if (sessionId) {
+      fetch(`/api/checkout/session/${sessionId}`, { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.order) setOrder(data.order);
+        })
+        .catch(() => {});
+      return;
+    }
     if (!orderId) return;
     fetch(`/api/orders/${orderId}`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then(setOrder)
       .catch(() => {});
-  }, [orderId]);
+  }, [orderId, sessionId]);
 
   return (
     <div className="min-h-screen">
@@ -37,7 +47,7 @@ export default function OrderSuccess() {
             ? `Welcome to TaleWeaver ${tier === "family" ? "Family Bundle" : "Storyteller"}. Your free books are ready to create.`
             : order?.format === "digital"
             ? "Your digital book is ready! Find it in your library."
-            : "Your printed book will ship in 5–7 business days. We'll email tracking when it goes out."}
+            : "Your print order is paid. We will manually review the book files before sending it to print, then email tracking when it ships."}
         </p>
 
         {order && (

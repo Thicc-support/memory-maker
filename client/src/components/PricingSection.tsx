@@ -6,46 +6,46 @@ import { cn } from "@/lib/utils";
 const plans = [
   {
     id: "digital",
-    name: "Digital",
-    price: "$14.99",
+    name: "Digital Keepsake",
+    price: "$19.99",
     icon: BookOpen,
-    description: "Perfect for sharing digitally",
+    description: "Best launch product",
     features: [
-      "8+ custom AI-illustrated pages",
-      "High-resolution PDF download",
-      "Instant delivery",
-      "Share via email or link",
-      "Print at home anytime",
+      "Personalized story-first book",
+      "10–24 custom illustrated pages",
+      "Choose your own title",
+      "Choose cover direction",
+      "Share with family instantly",
     ],
     popular: false,
   },
   {
     id: "softcover",
     name: "Softcover",
-    price: "$29.99",
+    price: "$39.99",
     icon: Sparkles,
-    description: "Beautiful & affordable",
+    description: "Printed family gift",
     features: [
       "Everything in Digital",
-      "Professional printing",
-      "8x10 inch premium paper",
-      "Glossy full-color pages",
-      "Ships in 5-7 days",
+      "Manual print review before order",
+      "Premium color pages",
+      "Shipping collected at checkout",
+      "Great for birthdays and holidays",
     ],
     popular: true,
   },
   {
     id: "hardcover",
     name: "Hardcover",
-    price: "$39.99",
+    price: "$59.99",
     icon: Crown,
-    description: "Heirloom quality keepsake",
+    description: "Premium family gift",
     features: [
       "Everything in Softcover",
-      "Casebound hard cover",
-      "Lay-flat binding",
-      "Dust jacket included",
-      "Gift box packaging",
+      "Premium hardcover keepsake",
+      "Best for family legacy stories",
+      "Manual print review before order",
+      "Great grandparent or parent gift",
     ],
     popular: false,
   },
@@ -61,7 +61,7 @@ export function PricingSection() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Every book is crafted with AI-powered storytelling and custom illustrations. Choose the format that's right for you.
+            Start with a digital keepsake today. Printed books are manually reviewed before fulfillment so family stories look right before they ship.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export function PricingSection() {
                 size="lg"
                 onClick={() => setLocation("/create")}
               >
-                Get Started
+                Start Creating
               </Button>
             </div>
           ))}

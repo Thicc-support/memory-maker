@@ -11,18 +11,18 @@ import { Footer } from "@/components/Footer";
 
 const EXAMPLE_BOOKS = [
   {
-    title: "My Career Journey",
-    description: "Document your professional path, lessons learned, and advice for the next generation.",
-    ageRange: "Adults",
+    title: "Dad Built the Skyline",
+    description: "A father's career story turned into a bedtime book about hard work, courage, and pride.",
+    ageRange: "Ages 4–8",
     theme: "Career",
     image: "/images/example-career.png",
     pages: [
       {
-        text: "Even when gravity tries to pull you down, keep your eyes on the stars. The view from up here is worth every step of the climb.",
+        text: "Every morning, Dad laced up his boots before the sun came up. He helped build tall places where families would work, laugh, and dream.",
         image: "/images/page-career.png"
       },
       {
-        text: "Training to be an astronaut takes hard work! Lifting heavy weights and studying star maps is how we prepare for lift-off.",
+        text: "He taught me that strong buildings start with careful plans, steady hands, and people who look out for each other.",
         image: "/images/page-career-2.png"
       },
       {
@@ -52,18 +52,18 @@ const EXAMPLE_BOOKS = [
     ]
   },
   {
-    title: "The Master Gardener",
-    description: "Capture the beauty of your garden and share your tips and tricks for a green thumb.",
-    ageRange: "All Ages",
-    theme: "Hobby",
+    title: "Grandpa's Brave Blue Jacket",
+    description: "A child-friendly military/service keepsake about courage, teamwork, and coming home.",
+    ageRange: "Ages 5–9",
+    theme: "Service",
     image: "/images/example-hobby.png",
     pages: [
       {
-        text: "The secret to the biggest pumpkins isn't just water and sun—it's whispering kind words to them every morning!",
+        text: "Grandpa kept his blue jacket folded in a special box. It reminded him of the friends who stood beside him and the family waiting at home.",
         image: "/images/page-hobby.png"
       },
       {
-        text: "First, we dig a little hole and tuck the seeds into their cozy bed. The rain clouds come to give them a drink.",
+        text: "He told me bravery does not mean never feeling scared. It means doing the right thing and helping the people next to you.",
         image: "/images/page-hobby-2.png"
       },
       {
@@ -93,9 +93,9 @@ const EXAMPLE_BOOKS = [
     ]
   },
   {
-    title: "World Explorer",
-    description: "A visual journey through all the places you've been and the adventures you've had.",
-    ageRange: "All Ages",
+    title: "Aunt Judy's Europe Adventure",
+    description: "A real travel adventure told as a colorful storybook for nieces, nephews, and grandkids.",
+    ageRange: "Ages 4–10",
     theme: "Travel",
     image: "/images/example-travel.png",
     pages: [
@@ -134,10 +134,10 @@ const EXAMPLE_BOOKS = [
     ]
   },
   {
-    title: "Grandma's Kitchen",
-    description: "Preserve family recipes and the stories behind them in a beautiful cookbook.",
-    ageRange: "All Ages",
-    theme: "Cooking",
+    title: "The Summer We All Went Camping",
+    description: "A family adventure book about the funny, sweet, unforgettable moments everyone still talks about.",
+    ageRange: "Ages 3–8",
+    theme: "Family Adventure",
     image: "/images/example-cooking.png",
     pages: [
       {
@@ -184,6 +184,33 @@ export default function Home() {
       <Navbar />
       <Hero />
       <ProcessSteps />
+
+      <section className="py-20 container mx-auto px-6">
+        <div className="bg-white rounded-3xl border border-border shadow-sm p-8 md:p-12">
+          <div className="text-center mb-10">
+            <h2 className="font-heading text-4xl font-bold mb-4 text-primary-foreground">Books you can create</h2>
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+              TaleWeaver is not just a photo book. It turns real people and real family moments into storybooks kids can understand and enjoy.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              "Dad's career story",
+              "Grandpa's military service",
+              "Aunt Judy's Europe adventure",
+              "Family camping trips",
+              "Grandma's childhood memories",
+              "Mom's life lessons",
+              "A pet's family adventure",
+              "A family legacy story",
+            ].map((item) => (
+              <div key={item} className="rounded-2xl bg-primary/5 border border-primary/10 p-5 font-semibold text-primary-foreground">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       
       <section id="examples" className="py-24 container mx-auto px-6">
         <div className="text-center mb-16">

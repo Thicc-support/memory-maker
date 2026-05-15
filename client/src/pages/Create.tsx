@@ -49,6 +49,7 @@ export default function Create() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [selectedCoverOption, setSelectedCoverOption] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [loadedDraft, setLoadedDraft] = useState<any>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -103,6 +104,7 @@ export default function Create() {
         .then(draft => {
           setLoadedDraft(draft);
           setDraftData({
+            title: draft.title,
             recipient: draft.recipient,
             recipientRelationship: draft.recipientRelationship,
             subject: draft.subject,
@@ -111,7 +113,13 @@ export default function Create() {
             bookLength: draft.bookLength,
             recipientName: draft.recipientName,
             recipientAge: draft.recipientAge,
+            coverSubject: draft.interviewAnswers?.coverSubject || "",
+            coverMood: draft.interviewAnswers?.coverMood || "",
+            coverSetting: draft.interviewAnswers?.coverSetting || "",
           });
+          if (draft.interviewAnswers?.selectedCoverOption) {
+            setSelectedCoverOption(draft.interviewAnswers.selectedCoverOption);
+          }
           if (draft.selectedStyle) {
             setSelectedStyle(draft.selectedStyle);
           }
@@ -130,7 +138,7 @@ export default function Create() {
       setIsSaving(true);
       try {
         const body = {
-          title: draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story",
+          title: draftData.title || (draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story"),
           recipient: draftData.recipient,
           recipientRelationship: draftData.recipientRelationship,
           subject: draftData.subject,
@@ -142,7 +150,13 @@ export default function Create() {
           selectedStyle,
           step,
           progress: step === "chat" ? 30 : step === "style" ? 60 : 90,
-          interviewAnswers: draftData.interviewAnswers || {},
+          interviewAnswers: {
+            ...(draftData.interviewAnswers || {}),
+            coverSubject: draftData.coverSubject,
+            coverMood: draftData.coverMood,
+            coverSetting: draftData.coverSetting,
+            selectedCoverOption,
+          },
           messages: draftData.messages || [],
         };
 
@@ -173,7 +187,7 @@ export default function Create() {
 
     const timer = setTimeout(saveData, 2000);
     return () => clearTimeout(timer);
-  }, [draftData, user, selectedStyle, step]);
+  }, [draftData, user, selectedStyle, selectedCoverOption, step]);
 
   const handleGenerateBook = async () => {
     setStep("generating");
@@ -199,9 +213,20 @@ export default function Create() {
           theme: draftData.theme,
           subject: draftData.subject,
           bookType: draftData.bookType,
-          interviewAnswers: draftData.interviewAnswers || {},
+          bookLength: draftData.bookLength,
+          interviewAnswers: {
+            ...(draftData.interviewAnswers || {}),
+            coverSubject: draftData.coverSubject,
+            coverMood: draftData.coverMood,
+            coverSetting: draftData.coverSetting,
+            selectedCoverOption,
+          },
           messages: draftData.messages || [],
-          title: draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story",
+          title: draftData.title || (draftData.recipientName ? `Book for ${draftData.recipientName}` : "Untitled Story"),
+          coverSubject: draftData.coverSubject,
+          coverMood: draftData.coverMood,
+          coverSetting: draftData.coverSetting,
+          selectedCoverOption,
           profileId: selectedProfileId,
         }),
         credentials: "include",
@@ -238,6 +263,27 @@ export default function Create() {
       console.error("Failed to favorite:", err);
     }
   };
+
+  const coverOptions = [
+    {
+      id: "storybook-portrait",
+      title: "Storybook Portrait",
+      description: `${draftData.coverSubject || draftData.recipientName || "The main character"} in a ${draftData.coverMood || "warm and magical"} scene, with the title large and clear.`,
+      bg: "from-amber-100 via-orange-50 to-pink-100",
+    },
+    {
+      id: "memory-scene",
+      title: "Memory Scene",
+      description: `A full illustrated moment set in ${draftData.coverSetting || "a meaningful place"}, designed to feel like a real family keepsake.`,
+      bg: "from-emerald-100 via-teal-50 to-sky-100",
+    },
+    {
+      id: "magical-adventure",
+      title: "Magical Adventure",
+      description: `A more imaginative cover with glowing details, soft storybook texture, and ${draftData.recipientName || "the child"} as the hero.`,
+      bg: "from-indigo-100 via-purple-50 to-fuchsia-100",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -296,8 +342,46 @@ export default function Create() {
             className="max-w-5xl mx-auto"
           >
             <div className="text-center mb-12">
-              <h1 className="font-heading text-3xl font-bold mb-3" data-testid="text-style-title">Choose your book's style</h1>
-              <p className="text-muted-foreground text-lg">Select a visual theme that best fits your story.</p>
+              <h1 className="font-heading text-3xl font-bold mb-3" data-testid="text-style-title">Choose your cover and book style</h1>
+              <p className="text-muted-foreground text-lg">Pick the cover direction and visual theme before we create the full preview.</p>
+            </div>
+
+            <div className="mb-12 bg-white rounded-3xl border border-border shadow-sm p-6">
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-primary font-bold mb-2">Book title</p>
+                <h2 className="font-heading text-2xl font-bold">{draftData.title || `Book for ${draftData.recipientName || "Someone Special"}`}</h2>
+                <p className="text-sm text-muted-foreground mt-1">Customers can choose their own title before the book is generated.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {coverOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setSelectedCoverOption(option.id)}
+                    className={cn(
+                      "text-left rounded-2xl border-2 overflow-hidden transition-all bg-white",
+                      selectedCoverOption === option.id
+                        ? "border-primary ring-4 ring-primary/10 shadow-xl scale-[1.01]"
+                        : "border-slate-100 hover:border-slate-300 hover:shadow-md"
+                    )}
+                    data-testid={`card-cover-${option.id}`}
+                  >
+                    <div className={`aspect-[4/3] bg-gradient-to-br ${option.bg} p-5 flex flex-col justify-between`}>
+                      <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-600">Cover option</div>
+                      <div>
+                        <div className="font-heading text-xl font-bold text-slate-900 leading-tight">{draftData.title || option.title}</div>
+                        <div className="mt-2 h-12 w-12 rounded-full bg-white/70 shadow-inner" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className="font-heading font-semibold">{option.title}</h3>
+                        {selectedCoverOption === option.id && <Check className="w-5 h-5 text-primary" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{option.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {availableProfiles.length > 0 && (
@@ -399,7 +483,7 @@ export default function Create() {
               <Button
                 size="lg"
                 className="px-8"
-                disabled={!selectedStyle}
+                disabled={!selectedStyle || !selectedCoverOption}
                 onClick={handleGenerateBook}
                 data-testid="button-create-book"
               >

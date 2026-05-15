@@ -12,23 +12,23 @@ export function FormatSelector({ selected, onChange }: FormatSelectorProps) {
     {
       id: "digital",
       title: "Digital Only",
-      price: "$14.99",
-      desc: "High-res PDF download",
-      features: ["Instant delivery", "Print at home", "Share via email"]
+      price: "$19.99",
+      desc: "Best first product to sell now",
+      features: ["High-res digital book", "Instant library access", "Share with family"]
     },
     {
       id: "softcover",
       title: "Softcover",
-      price: "$29.99",
-      desc: "Flexible & durable",
-      features: ["8x10 inch size", "Premium paper", "Glossy finish"]
+      price: "$39.99",
+      desc: "Printed keepsake",
+      features: ["Manual print review", "Premium color pages", "Shipping collected at checkout"]
     },
     {
       id: "hardcover",
       title: "Hardcover",
-      price: "$39.99",
-      desc: "Heirloom quality",
-      features: ["Casebound", "Lay-flat pages", "Gift box included"]
+      price: "$59.99",
+      desc: "Premium family gift",
+      features: ["Manual print review", "Heirloom-style keepsake", "Shipping collected at checkout"]
     }
   ] as const;
 

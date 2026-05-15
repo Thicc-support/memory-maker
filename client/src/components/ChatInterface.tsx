@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, User, Bot, Globe, Briefcase, Heart, Star, Book, Feather, Upload, Image as ImageIcon, HelpCircle, Map, Compass, Trophy, Target, Scroll, Clock, Hourglass } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { Slider } from "@/components/ui/slider";
@@ -10,7 +10,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  type?: "text" | "recipient-select" | "recipient-detail-select" | "subject-select" | "theme-select" | "format-select" | "length-select" | "age-select" | "photo-upload" | "balance-select";
+  type?: "text" | "recipient-select" | "recipient-detail-select" | "subject-select" | "theme-select" | "format-select" | "length-select" | "age-select" | "title-select" | "cover-mood-select" | "cover-setting-select" | "photo-upload" | "balance-select";
   options?: any;
 }
 
@@ -21,59 +21,59 @@ interface ChatInterfaceProps {
 }
 
 const themeQuestions: Record<string, string[]> = {
-  "Adventure": [
-    "What is the biggest challenge they have overcome?",
-    "Who is their favorite sidekick or companion?",
-    "If they could explore any dangerous place, where would they go?",
-    "What magical item would they take on their journey?"
+  "Career Story": [
+    "What kind of work, career, or calling is this person known for?",
+    "What moment from their work life would make a child proud or excited to read about?",
+    "What did this person teach others through their work?",
+    "What feeling should the child have about this person by the end of the book?"
   ],
-  "Travel": [
-    "What is the most memorable place they have visited?",
-    "What's a funny thing that happened on a trip?",
-    "What is their favorite way to travel (plane, train, boat, etc.)?",
-    "If they could teleport anywhere right now, where would it be?"
+  "Military / Service": [
+    "What branch, role, or kind of service should the story honor?",
+    "What place, uniform, object, or memory should be included?",
+    "What values did this person show — courage, sacrifice, loyalty, leadership, or something else?",
+    "How should we explain their service in a child-friendly way?"
   ],
-  "Exploration": [
-    "What kind of things do they like to discover or investigate?",
-    "If they could explore anywhere, where would it be?",
-    "What tools would they bring on an expedition?",
-    "What mystery would they love to solve?"
+  "Travel Adventure": [
+    "Where did this adventure happen?",
+    "What was the most memorable place, meal, person, or surprise from the trip?",
+    "Who was there, and what made the trip special?",
+    "What should the child learn or feel from this adventure?"
   ],
-  "My Career": [
-    "What is their dream job or current profession?",
-    "What do they love most about their work?",
-    "What is a funny workplace story they tell?",
-    "If they could do any job for one day, what would it be?"
+  "Family Adventure": [
+    "What family adventure or tradition should this book be about?",
+    "Who was there, and what role did each person play?",
+    "What funny, sweet, or unforgettable moment should be included?",
+    "What makes this family special?"
   ],
-  "My Hobbies": [
-    "What is their absolute favorite hobby or pastime?",
-    "How did they get started with this hobby?",
-    "What is their proudest achievement in this hobby?",
-    "If they could turn this hobby into a superpower, what would it be?"
+  "Childhood Memories": [
+    "Where did this person grow up, and what was life like there?",
+    "What childhood memory should become a scene in the book?",
+    "Who helped shape them when they were young?",
+    "What lesson from their childhood should be passed down?"
   ],
-  "Challenges": [
-    "Tell me about a time they didn't give up.",
-    "What motivates them to keep going?",
-    "Who helped them when things got tough?",
-    "How did they celebrate their success?"
+  "Life Lessons": [
+    "What lesson or value should this story pass down?",
+    "What real moment shows that lesson best?",
+    "Who helped this person become who they are?",
+    "What words of wisdom should the child remember?"
   ],
-  "Missions": [
-    "If they were a secret agent, what would their mission be?",
-    "What is their special skill or gadget?",
-    "Who is their nemesis or rival?",
-    "What is the code name for their secret operation?"
+  "Love Story": [
+    "Who is this love story about?",
+    "How did they meet or become close?",
+    "What small details make their relationship special?",
+    "How should this love story be told for a child?"
   ],
-  "Quests": [
-    "What is the 'treasure' they are always searching for?",
-    "Who helps them on their quest?",
-    "What obstacles stand in their way?",
-    "Where does the map lead them?"
+  "Pet Story": [
+    "What is the pet’s name and personality?",
+    "What funny or sweet memory with the pet should be included?",
+    "Who is the pet closest to?",
+    "What adventure should the pet go on in the book?"
   ],
-  "Fantasy": [
-    "If they had a magic power, what would it be?",
-    "What kind of magical creature would be their friend?",
-    "If they had a castle, what would it look like?",
-    "What spell would they cast most often?"
+  "Big Achievement": [
+    "What achievement should this book celebrate?",
+    "What challenge did they have to overcome?",
+    "Who supported them along the way?",
+    "How should the ending celebrate their hard work?"
   ],
 };
 
@@ -82,7 +82,7 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi! I'm TaleWeaver. I'm going to help you create a magical custom book. Let's start with the most important question:",
+      content: "Hi! I'm TaleWeaver. I'm going to help you turn a real person, memory, trip, career, or family story into a magical children's book. Let's start with the most important question:",
       type: "text"
     },
     {
@@ -106,6 +106,10 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
     bookLength: "",
     recipientName: "",
     recipientAge: "",
+    title: "",
+    coverSubject: "",
+    coverMood: "",
+    coverSetting: "",
     photos: [] as string[],
     interviewAnswers: {} as Record<string, string>,
     messages: [] as any[],
@@ -190,17 +194,17 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
     },
     askSubject: () => {
       addMessage({
-        id: "q-subject", role: "assistant", content: "And who is this book about? (The main character)", type: "subject-select"
+        id: "q-subject", role: "assistant", content: "Who or what is this book mainly about?", type: "subject-select"
       });
     },
     askTheme: () => {
       addMessage({
-        id: "q-theme", role: "assistant", content: "Wonderful choice! Now, what kind of adventure should we go on?", type: "theme-select"
+        id: "q-theme", role: "assistant", content: "Wonderful choice! What kind of real-life story should this become?", type: "theme-select"
       });
     },
     askFormat: () => {
       addMessage({
-        id: "q-format", role: "assistant", content: "Ooh, I love that theme! How should we tell this story?", type: "format-select"
+        id: "q-format", role: "assistant", content: "I love that direction. How should we tell this story?", type: "format-select"
       });
     },
     askLength: () => {
@@ -219,9 +223,30 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
         id: "q-age", role: "assistant", content: "And how old is the recipient? This helps us tailor the reading difficulty to match their age.", type: "age-select"
       });
     },
+    askTitle: () => {
+      addMessage({
+        id: "q-title", role: "assistant", content: "What title do you like best for the book? You can pick one or write your own.", type: "title-select"
+      });
+    },
+    askCoverSubject: () => {
+      addMessage({
+        id: "q-cover-subject", role: "assistant", content: "Now let’s design the cover. What should be on the cover? For example: the child with Grandpa under an oak tree, the family pet, a magical doorway, or a favorite memory scene.", type: "text"
+      });
+      setWaitingForInput("cover_subject");
+    },
+    askCoverMood: () => {
+      addMessage({
+        id: "q-cover-mood", role: "assistant", content: "What feeling should the cover have?", type: "cover-mood-select"
+      });
+    },
+    askCoverSetting: () => {
+      addMessage({
+        id: "q-cover-setting", role: "assistant", content: "What background or setting should the cover show?", type: "cover-setting-select"
+      });
+    },
     askPhotos: () => {
       addMessage({
-        id: "q-photos", role: "assistant", content: "Almost there! To make the illustrations look just right, could you upload a photo of the main character?", type: "photo-upload"
+        id: "q-photos", role: "assistant", content: "Almost there! Upload any helpful photos if you have them — the person, family, places, uniforms, travel photos, pets, or meaningful objects. These are references for the storybook, not the whole product.", type: "photo-upload"
       });
     },
     startInterview: () => {
@@ -303,6 +328,27 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
     
     if (waitingForInput === "custom_age") {
       setDraft(prev => ({ ...prev, recipientAge: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askTitle);
+      return;
+    }
+
+    if (waitingForInput === "custom_title") {
+      setDraft(prev => ({ ...prev, title: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askCoverSubject);
+      return;
+    }
+
+    if (waitingForInput === "cover_subject") {
+      setDraft(prev => ({ ...prev, coverSubject: input }));
+      setWaitingForInput(null);
+      simulateTyping(steps.askCoverMood);
+      return;
+    }
+
+    if (waitingForInput === "custom_cover_setting") {
+      setDraft(prev => ({ ...prev, coverSetting: input }));
       setWaitingForInput(null);
       simulateTyping(steps.askPhotos);
       return;
@@ -432,7 +478,7 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
 
               {msg.type === "subject-select" && (
                 <div className="ml-11 mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
-                   {["A Child", "Mom", "Dad", "Grandparent", "Aunt", "Uncle", "Family Heritage", "Someone else"].map(opt => (
+                   {["A Child", "Mom", "Dad", "Grandparent", "Aunt", "Uncle", "The Whole Family", "Family Heritage", "A Pet", "Someone else"].map(opt => (
                      <Button 
                         key={opt} 
                         variant="outline" 
@@ -448,15 +494,15 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
               {msg.type === "theme-select" && (
                 <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
                    {[
-                      { id: "adventure", icon: Globe, label: "Adventure" },
-                      { id: "travel", icon: Map, label: "Travel" },
-                      { id: "exploration", icon: Compass, label: "Exploration" },
-                      { id: "career", icon: Briefcase, label: "My Career" },
-                      { id: "hobby", icon: Heart, label: "My Hobbies" },
-                      { id: "challenges", icon: Trophy, label: "Challenges" },
-                      { id: "missions", icon: Target, label: "Missions" },
-                      { id: "quests", icon: Scroll, label: "Quests" },
-                      { id: "fantasy", icon: Star, label: "Fantasy" },
+                      { id: "career", icon: Briefcase, label: "Career Story" },
+                      { id: "service", icon: Star, label: "Military / Service" },
+                      { id: "travel", icon: Map, label: "Travel Adventure" },
+                      { id: "family", icon: Heart, label: "Family Adventure" },
+                      { id: "childhood", icon: Compass, label: "Childhood Memories" },
+                      { id: "lessons", icon: Scroll, label: "Life Lessons" },
+                      { id: "love", icon: Heart, label: "Love Story" },
+                      { id: "pet", icon: Target, label: "Pet Story" },
+                      { id: "achievement", icon: Trophy, label: "Big Achievement" },
                     ].map(opt => (
                      <Button 
                         key={opt.id} 
@@ -482,23 +528,23 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
               {msg.type === "format-select" && (
                 <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
                    <div 
-                      onClick={() => handleSelection("bookType", "Story Book", steps.askLength, index)}
+                      onClick={() => handleSelection("bookType", "Storybook", steps.askLength, index)}
                       className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                    >
                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Book size={20} /></div>
                      <div>
-                       <div className="font-bold text-sm">Story Book</div>
-                       <div className="text-xs text-muted-foreground">Classic narrative structure</div>
+                       <div className="font-bold text-sm">Storybook</div>
+                       <div className="text-xs text-muted-foreground">A warm children’s story based on real memories</div>
                      </div>
                    </div>
                    <div 
-                      onClick={() => handleSelection("bookType", "Poem Collection", steps.askLength, index)}
+                      onClick={() => handleSelection("bookType", "Rhyming Story", steps.askLength, index)}
                       className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex gap-3 items-center"
                    >
                      <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Feather size={20} /></div>
                      <div>
-                       <div className="font-bold text-sm">Poem Collection</div>
-                       <div className="text-xs text-muted-foreground">Rhyming verses</div>
+                       <div className="font-bold text-sm">Rhyming Story</div>
+                       <div className="text-xs text-muted-foreground">A poem-like story with gentle rhythm</div>
                      </div>
                    </div>
                    <div 
@@ -517,9 +563,9 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
               {msg.type === "length-select" && (
                 <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-xs">
                    {[
-                      { id: "short", icon: Clock, label: "Short & Sweet", desc: "5 minute read" },
-                      { id: "standard", icon: Book, label: "Standard Story", desc: "10 minute read" },
-                      { id: "epic", icon: Hourglass, label: "Epic Adventure", desc: "20 minute read" }
+                      { id: "mini", icon: Clock, label: "Mini Keepsake", desc: "10 pages · best for toddlers or simple gifts" },
+                      { id: "standard", icon: Book, label: "Standard Story", desc: "16 pages · best starting point" },
+                      { id: "premium", icon: Hourglass, label: "Premium Keepsake", desc: "24 pages · deeper story for older kids or family legacy" }
                    ].map(opt => (
                      <div 
                         key={opt.id}
@@ -542,7 +588,7 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
                      <Button 
                         key={opt} 
                         variant="outline" 
-                        onClick={() => handleSelection("recipientAge", opt, steps.askPhotos, index)}
+                        onClick={() => handleSelection("recipientAge", opt, steps.askTitle, index)}
                         className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
                      >
                        {opt}
@@ -571,11 +617,88 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
                 </div>
               )}
 
+              {msg.type === "title-select" && (
+                <div className="ml-11 mt-3 flex flex-col gap-2 w-full max-w-md">
+                   {[
+                      `${draft.recipientName || "My Child"}'s Magical Memory`,
+                      `The Day ${draft.recipientName || "We"} Became the Hero`,
+                      `A Story for ${draft.recipientName || "Someone Special"}`,
+                   ].map(opt => (
+                     <div
+                        key={opt}
+                        onClick={() => handleSelection("title", opt, steps.askCoverSubject, index)}
+                        className="cursor-pointer bg-white border border-border p-3 rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+                     >
+                       <div className="font-bold text-sm">{opt}</div>
+                       <div className="text-xs text-muted-foreground">Use this as the book title</div>
+                     </div>
+                   ))}
+                   <Button
+                      variant="outline"
+                      onClick={() => {
+                        addMessage({ id: Date.now().toString(), role: "user", content: "I want to write my own title" });
+                        simulateTyping(() => {
+                          addMessage({ id: Date.now().toString(), role: "assistant", content: "Great — what should the title be?", type: "text" });
+                          setWaitingForInput("custom_title");
+                        });
+                      }}
+                      className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
+                   >
+                     <HelpCircle size={16} className="text-muted-foreground" />
+                     Write my own title
+                   </Button>
+                </div>
+              )}
+
+              {msg.type === "cover-mood-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
+                   {["Warm and cozy", "Magical and whimsical", "Adventurous", "Funny and playful", "Classic storybook", "Emotional keepsake"].map(opt => (
+                     <Button
+                        key={opt}
+                        variant="outline"
+                        onClick={() => handleSelection("coverMood", opt, steps.askCoverSetting, index)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                     >
+                       {opt}
+                     </Button>
+                   ))}
+                </div>
+              )}
+
+              {msg.type === "cover-setting-select" && (
+                <div className="ml-11 mt-3 grid grid-cols-2 gap-2 w-full max-w-md">
+                   {["Bedroom / bedtime", "Forest", "Beach", "Backyard", "Grandparents' house", "Fantasy world", "Let AI decide"].map(opt => (
+                     <Button
+                        key={opt}
+                        variant="outline"
+                        onClick={() => handleSelection("coverSetting", opt, steps.askPhotos, index)}
+                        className="justify-start h-auto py-3 px-4 hover:border-primary hover:bg-primary/5 transition-all text-left whitespace-normal"
+                     >
+                       {opt}
+                     </Button>
+                   ))}
+                   <Button
+                      variant="outline"
+                      onClick={() => {
+                        addMessage({ id: Date.now().toString(), role: "user", content: "Something else" });
+                        simulateTyping(() => {
+                          addMessage({ id: Date.now().toString(), role: "assistant", content: "What setting should the cover show?", type: "text" });
+                          setWaitingForInput("custom_cover_setting");
+                        });
+                      }}
+                      className="justify-start h-auto py-3 px-4 gap-2 hover:border-primary hover:bg-primary/5 transition-all"
+                   >
+                     <HelpCircle size={16} className="text-muted-foreground" />
+                     Something else
+                   </Button>
+                </div>
+              )}
+
               {msg.type === "photo-upload" && messages.indexOf(msg) === messages.length - 1 && (
                 <div className="ml-11 mt-3 w-full max-w-md bg-white p-4 rounded-xl border border-border">
-                  <PhotoUpload label="Upload Photo" description="Clear face photo works best" />
+                  <PhotoUpload label="Upload helpful photos" description="People, places, uniforms, pets, trips, homes, or meaningful objects" />
                   <Button size="sm" onClick={() => {
-                    addMessage({ id: Date.now().toString(), role: "user", content: "Photos uploaded!" });
+                    addMessage({ id: Date.now().toString(), role: "user", content: "Photos added or skipped" });
                     simulateTyping(steps.startInterview);
                   }} className="mt-4 w-full rounded-full">
                     Done Uploading
@@ -604,17 +727,23 @@ export function ChatInterface({ onComplete, onUpdateDraft, initialDraft }: ChatI
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-border">
-        <form 
+        <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex gap-2"
+          className="flex gap-2 items-end"
         >
-          <Input 
+          <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder="Type your answer here..."
-            className="flex-1 rounded-full border-slate-200 focus:ring-primary bg-slate-50"
+            className="flex-1 min-h-[44px] max-h-32 resize-none rounded-2xl border-slate-200 focus:ring-primary bg-slate-50"
             autoFocus
-            disabled={isTyping} 
+            disabled={isTyping}
           />
           <Button 
             type="submit" 

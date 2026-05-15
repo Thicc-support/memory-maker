@@ -11,36 +11,50 @@ export function FAQ() {
       <div className="text-center mb-16">
         <h2 className="font-heading text-4xl font-bold mb-4 text-primary-foreground">Frequently Asked Questions</h2>
         <p className="text-muted-foreground text-lg">
-          Everything you need to know about creating your family's new favorite book.
+          Everything you need to know about creating a family storybook keepsake.
         </p>
       </div>
 
       <Accordion type="single" collapsible className="w-full bg-white p-8 rounded-2xl shadow-sm border border-border">
         <AccordionItem value="item-1">
-          <AccordionTrigger className="text-lg font-bold">How does it work?</AccordionTrigger>
+          <AccordionTrigger className="text-lg font-bold">What kinds of books can I make?</AccordionTrigger>
           <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-            Our AI interviewer asks you a few simple questions about your story, memories, and values. Then, it weaves your answers into a beautiful narrative and generates custom illustrations to match. You can review and edit everything before we print and ship your hardcover book!
+            You can make books about a real person, couple, pet, family, career, military service, travel adventure, childhood memory, life lesson, or family tradition. The book is story-first: photos help with details, but the heart is the person and memory.
           </AccordionContent>
         </AccordionItem>
-        
+
         <AccordionItem value="item-2">
+          <AccordionTrigger className="text-lg font-bold">Do I need photos?</AccordionTrigger>
+          <AccordionContent className="text-muted-foreground text-base leading-relaxed">
+            No. Photos are optional. If you upload them, they help with people, places, uniforms, pets, homes, trips, and meaningful objects. You can still create a book from written memories alone.
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="item-3">
           <AccordionTrigger className="text-lg font-bold">How much does it cost?</AccordionTrigger>
           <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-            A custom 32-page hardcover book starts at $45, which includes the AI storytelling process, custom illustrations, and standard shipping. We also offer digital-only versions for $20 if you prefer to read on a tablet.
+            Digital keepsake books are $19.99. Printed softcover keepsakes are $39.99, and premium hardcover keepsakes are $59.99. Printed books are manually reviewed before fulfillment so the final book looks right.
           </AccordionContent>
         </AccordionItem>
-        
-        <AccordionItem value="item-3">
+
+        <AccordionItem value="item-4">
+          <AccordionTrigger className="text-lg font-bold">Do I get to choose the title and cover?</AccordionTrigger>
+          <AccordionContent className="text-muted-foreground text-base leading-relaxed">
+            Yes. You can choose from suggested titles or write your own, then pick the cover direction and illustration style before generating the book.
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="item-5">
           <AccordionTrigger className="text-lg font-bold">Do I get to preview the book?</AccordionTrigger>
           <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-            Absolutely! Before you buy, you can read the entire story and see all the illustrations. If something isn't quite right, you can ask our AI to rewrite a page or regenerate an image until it's perfect.
+            Yes. You can preview the generated book and edit pages before ordering. This is especially important for real family stories, names, places, and memories.
           </AccordionContent>
         </AccordionItem>
-        
-        <AccordionItem value="item-4">
-          <AccordionTrigger className="text-lg font-bold">Are my photos and data safe?</AccordionTrigger>
+
+        <AccordionItem value="item-6">
+          <AccordionTrigger className="text-lg font-bold">Are my photos and family details safe?</AccordionTrigger>
           <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-            Yes. Your privacy is our top priority. We only use your information to generate your specific book, and we never share your data or use it to train public AI models. You have full control over your account and creations.
+            Your private family details are used to create your book. We do not sell your information, and private uploads should only be used for your own book experience.
           </AccordionContent>
         </AccordionItem>
       </Accordion>

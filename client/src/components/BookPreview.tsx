@@ -221,7 +221,7 @@ export function BookPreview({ bookId, title = "Your Story", pages: initialPages,
 
         <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-border">
           <div className="text-muted-foreground text-sm flex items-center gap-2">
-            <Truck size={16} /> Estimated delivery: {format === "digital" ? "Instant" : "5-7 business days"}
+            <Truck size={16} /> {format === "digital" ? "Digital access: instant" : "Printed books: manual review before fulfillment"}
           </div>
 
           <div className="flex gap-3">

@@ -4,18 +4,18 @@ export function ProcessSteps() {
   const steps = [
     {
       icon: <MessageSquare size={32} />,
-      title: "1. Chat with AI",
-      description: "Answer fun questions about your memories and adventures. It's like chatting with a friend!"
+      title: "1. Tell the real story",
+      description: "Answer simple questions about the person, trip, career, service, memory, or family adventure. Upload helpful photos if you have them."
     },
     {
       icon: <BookText size={32} />,
-      title: "2. We Write & Illustrate",
-      description: "Our magical engine turns your answers into a custom story with beautiful artwork."
+      title: "2. Choose title + cover",
+      description: "Pick or write the book title, choose the cover direction, and select the age/page-count that fits the child reading it."
     },
     {
       icon: <Gift size={32} />,
-      title: "3. Get Your Book",
-      description: "We print your one-of-a-kind hardcover book and ship it directly to your door."
+      title: "3. Preview, then order",
+      description: "Review the storybook preview, make edits, then buy a digital copy or printed keepsake when it is ready."
     }
   ];
 
@@ -24,11 +24,10 @@ export function ProcessSteps() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="font-heading text-4xl font-bold mb-4">How It Works</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Creating a timeless family keepsake has never been easier.</p>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">A simple way to preserve real family stories in a book children will actually want to read.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-12 relative">
-          {/* Connector Line */}
           <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-border -z-10 border-t-2 border-dashed border-muted-foreground/30" />
 
           {steps.map((step, i) => (

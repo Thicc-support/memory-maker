@@ -13,9 +13,9 @@ const stripeKey = process.env.STRIPE_SECRET_KEY;
 export const stripe = stripeKey ? new Stripe(stripeKey) : null;
 
 export const BOOK_PRICES = {
-  digital: { amount: 999, name: "Digital PDF" },
-  softcover: { amount: 2499, name: "Softcover Book" },
-  hardcover: { amount: 3499, name: "Hardcover Book" },
+  digital: { amount: 1999, name: "Digital PDF Keepsake" },
+  softcover: { amount: 3999, name: "Softcover Keepsake Book" },
+  hardcover: { amount: 5999, name: "Hardcover Keepsake Book" },
 } as const;
 
 export const SUBSCRIPTION_TIERS = {
@@ -66,6 +66,20 @@ function getOrigin(req: Request): string {
   return `${proto}://${host}`;
 }
 
+function shippingAddressFromSession(session: Stripe.Checkout.Session) {
+  const details = (session as any).shipping_details;
+  if (!details?.address) return null;
+  return {
+    name: details.name || "",
+    line1: details.address.line1 || "",
+    line2: details.address.line2 || "",
+    city: details.address.city || "",
+    state: details.address.state || "",
+    zip: details.address.postal_code || "",
+    country: details.address.country || "",
+  };
+}
+
 export function registerStripeRoutes(app: Express) {
   // Webhook MUST use raw body, mounted before any json parser would touch it
   app.post(
@@ -107,6 +121,7 @@ export function registerStripeRoutes(app: Express) {
                   status: "paid",
                   stripeSessionId: session.id,
                   stripePaymentId: (session.payment_intent as string) || null,
+                  shippingAddress: shippingAddressFromSession(session) || order.shippingAddress,
                 });
               }
             }
@@ -297,6 +312,47 @@ export function registerStripeRoutes(app: Express) {
   );
 
   // Get order by id (for success page)
+  app.get(
+    "/api/checkout/session/:sessionId",
+    requireStripe,
+    requireAuth,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const sessionId = routeParam(req, "sessionId");
+        const session = await stripe!.checkout.sessions.retrieve(sessionId);
+        const orderId = session.metadata?.orderId;
+        const userId = session.metadata?.userId;
+
+        if (!orderId || userId !== (req.user as any).id) {
+          return res.status(404).json({ message: "Checkout session not found" });
+        }
+
+        const order = await storage.getOrder(orderId);
+        if (!order || order.userId !== (req.user as any).id) {
+          return res.status(404).json({ message: "Order not found" });
+        }
+
+        let updatedOrder = order;
+        if (session.payment_status === "paid" && order.status !== "paid") {
+          updatedOrder = (await storage.updateOrder(order.id, {
+            status: "paid",
+            stripeSessionId: session.id,
+            stripePaymentId: (session.payment_intent as string) || null,
+            shippingAddress: shippingAddressFromSession(session) || order.shippingAddress,
+          })) || order;
+        }
+
+        res.json({
+          sessionId: session.id,
+          paymentStatus: session.payment_status,
+          order: updatedOrder,
+        });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   app.get(
     "/api/orders/:id",
     requireAuth,

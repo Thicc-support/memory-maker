@@ -4,21 +4,21 @@ import { motion } from "framer-motion";
 const TESTIMONIALS = [
   {
     name: "Sarah M.",
-    role: "Mother of two",
-    text: "The look on my daughter's face when she realized the brave astronaut in the story was based on her was priceless. This is our new favorite bedtime book.",
-    image: "/images/testimonial-1.jpg"
+    role: "Daughter creating a gift for Dad",
+    text: "I wanted my kids to understand what their grandpa did for work. TaleWeaver turned his career stories into something warm, simple, and fun enough for bedtime.",
+    image: "/images/page-career.png"
   },
   {
     name: "David T.",
     role: "Grandfather",
-    text: "I wanted to share my gardening stories with my grandson, but I'm no writer. TaleWeaver took my rambling memories and turned them into a gorgeous, magical adventure.",
-    image: "/images/testimonial-3.jpg"
+    text: "I had old service stories and a few photos, but I didn't know how to make them child-friendly. The book made my memories feel like something my grandson could hold onto.",
+    image: "/images/page-hobby.png"
   },
   {
     name: "Elena R.",
     role: "Aunt",
-    text: "Truly one-in-a-million! I created a book about our family beach vacation, and the illustrations capture the exact feeling of those sunny days.",
-    image: "/images/testimonial-2.jpg"
+    text: "I created a book about our Europe trip for my niece. It felt personal without being just a photo album — it told the adventure behind the pictures.",
+    image: "/images/page-travel.png"
   }
 ];
 
@@ -33,16 +33,16 @@ export function Testimonials() {
             ))}
           </div>
           <h2 className="font-heading text-4xl font-bold mb-4 text-primary-foreground">
-            Truly One-in-a-Million ✨
+            Real memories, made readable for kids ✨
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Join thousands of families who have already turned their memories into magical stories.
+            Built for families who want to pass down stories, not just store photos on a phone.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {TESTIMONIALS.map((testimonial, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -51,8 +51,8 @@ export function Testimonials() {
               className="bg-white rounded-2xl p-6 shadow-sm border border-border flex flex-col h-full"
             >
               <div className="w-full h-48 mb-6 overflow-hidden rounded-xl">
-                <img 
-                  src={testimonial.image} 
+                <img
+                  src={testimonial.image}
                   alt={testimonial.name}
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                 />

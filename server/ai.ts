@@ -36,11 +36,13 @@ interface StoryProfileContext {
 }
 
 interface StoryInput {
+  title?: string;
   recipientName: string;
   recipientAge: string;
   theme: string;
   subject: string;
   bookType: string;
+  bookLength?: string;
   style: string;
   interviewAnswers: Record<string, string>;
   messages: any[];
@@ -52,7 +54,16 @@ interface StoryInput {
   };
 }
 
+function pageCountForLength(bookLength?: string, recipientAge?: string): number {
+  const length = (bookLength || "").toLowerCase();
+  const age = (recipientAge || "").toLowerCase();
+  if (length.includes("epic") || length.includes("premium") || age.includes("8-12") || age.includes("13")) return 24;
+  if (length.includes("standard") || age.includes("4-7") || age.includes("6-8")) return 16;
+  return 10;
+}
+
 function buildStoryPrompt(input: StoryInput): string {
+  const pageCount = pageCountForLength(input.bookLength, input.recipientAge);
   const interviewContext = Object.entries(input.interviewAnswers || {})
     .map(([q, a]) => `Q: ${q}\nA: ${a}`)
     .join("\n\n");
@@ -89,14 +100,18 @@ ${p.aiNotes ? `- Additional notes: ${p.aiNotes}` : ""}`;
     preferencesSection = `\n\nCUSTOMER CONTEXT: This customer has created ${input.customerPreferences.totalBooks} book(s) before. They enjoy themes like: ${(input.customerPreferences.preferredThemes || []).join(", ") || "various"}.`;
   }
 
-  return `You are a warm children's book author creating a personalized keepsake story. Write a children's book with EXACTLY 8 pages.
+  return `You are a warm children's book author creating a personalized keepsake story. Write a children's book with EXACTLY ${pageCount} pages.
+
+This product is story-first, not a generic fantasy generator and not a simple photo book. The book should honor a real person, group of people, family memory, career, service, trip, pet, or life event, then translate it into a child-friendly storybook.
 
 Details:
 - Recipient name: ${input.recipientName || "the reader"}
+- Chosen book title: ${input.title || `Book for ${input.recipientName || "the reader"}`}
 - Recipient age: ${input.recipientAge || "5"}
 - Theme: ${input.theme || "Adventure"}
 - Subject/main character: ${input.subject || input.recipientName || "a brave child"}
 - Book type: ${input.bookType || "Story Book"}
+- Product length/tier: ${input.bookLength || "Standard Story"}
 - Visual style: ${input.style || "whimsical"}
 ${profileSection}${preferencesSection}
 
@@ -104,9 +119,12 @@ Interview answers from the person creating this book:
 ${interviewContext || chatContext || "No specific details provided."}
 
 Instructions:
-- Write exactly 8 pages of story text
+- Write exactly ${pageCount} pages of story text
 - Each page should be 2-3 sentences, appropriate for the recipient's age
 - Make it warm, fun, and personal using the details provided
+- Keep the real person, people, career, service, trip, pet, or family memory at the center of the story
+- Use uploaded-photo descriptions or photo-related answers only as helpful references for people, places, uniforms, objects, and settings
+- Do not turn the story into a random fantasy unless the customer asked for that tone
 - Include the recipient's name naturally in the story
 - The story should have a clear beginning, middle, and end
 - Keep language simple and joyful for children
@@ -114,11 +132,11 @@ Instructions:
 - If character profile details are provided, use them consistently (appearance, personality, interests)
 - If previous books exist for this character, naturally reference past adventures and show growth
 
-Return ONLY a JSON array with 8 objects, each having "text" and "pageNumber" fields.
+Return ONLY a JSON array with ${pageCount} objects, each having "text" and "pageNumber" fields.
 Example: [{"text": "Once upon a time...", "pageNumber": 1}, ...]`;
 }
 
-function normalizeStoryPages(content: string): Array<{ text: string; pageNumber: number }> {
+function normalizeStoryPages(content: string, pageCount: number): Array<{ text: string; pageNumber: number }> {
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
     throw new Error("Failed to parse story response");
@@ -132,14 +150,14 @@ function normalizeStoryPages(content: string): Array<{ text: string; pageNumber:
 
   pages = pages.filter((p: any) => p && typeof p.text === "string" && p.text.trim().length > 0);
 
-  while (pages.length < 8) {
+  while (pages.length < pageCount) {
     pages.push({
       text: "And so the adventure continued, with more wonderful memories to be made...",
       pageNumber: pages.length + 1,
     });
   }
 
-  return pages.slice(0, 8).map((p: any, i: number) => ({
+  return pages.slice(0, pageCount).map((p: any, i: number) => ({
     text: p.text,
     pageNumber: i + 1,
   }));
@@ -175,12 +193,13 @@ async function generateOpenAIStory(prompt: string): Promise<string> {
 }
 
 export async function generateStory(input: StoryInput): Promise<Array<{ text: string; pageNumber: number }>> {
+  const pageCount = pageCountForLength(input.bookLength, input.recipientAge);
   const prompt = buildStoryPrompt(input);
   const content = storyProvider === "anthropic"
     ? await generateAnthropicStory(prompt)
     : await generateOpenAIStory(prompt);
 
-  return normalizeStoryPages(content);
+  return normalizeStoryPages(content, pageCount);
 }
 
 function buildIllustrationPrompt(
